@@ -1,0 +1,2291 @@
+import React, { useEffect, useState } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  ScrollView,
+  Alert,
+  TouchableOpacity,
+  Modal,
+  Platform
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { Target, ArrowRight, Filter, ChevronDown, ChevronRight, Folder, Crown, X, Check, CreditCard, BarChart, Calendar } from 'lucide-react-native';
+import { useColors } from '@/hooks/useColors';
+import { GoalItem } from '@/components/GoalItem';
+import { TaskItem } from '@/components/TaskItem';
+import { useGoalStore } from '@/store/goalStore';
+import { useTaskStore } from '@/store/taskStore';
+import { useProjectStore } from '@/store/projectStore';
+import { useStreakStore } from '@/store/streakStore';
+import { useAuthStore } from '@/store/authStore';
+import { StreakCounter } from '@/components/StreakCounter';
+import { WeeklyWorkoutTracker } from '@/components/WeeklyWorkoutTracker';
+import { Button } from '@/components/Button';
+import { useWorkoutSessionStore } from '@/store/workoutSessionStore';
+
+export default function HomeScreen() {
+  const router = useRouter();
+  const colors = useColors();
+  const { goals, deleteGoal, getMonthlyGoalStats, getGoalLimits } = useGoalStore();
+  const { tasks, toggleComplete, deleteTask, getMonthlyTaskStats, checkAndResetDaily } = useTaskStore();
+  const { projects, getMonthlyProjectStats } = useProjectStore();
+  const { currentStreak, checkAndUpdateStreak } = useStreakStore();
+  const { user, upgradeToPremium } = useAuthStore();
+  const { getMonthlyWorkoutStats } = useWorkoutSessionStore();
+  const [filterType, setFilterType] = useState<'all' | 'short-term' | 'long-term'>('all');
+  const [showAddGoalModal, setShowAddGoalModal] = useState(false);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [showPaymentOptions, setShowPaymentOptions] = useState(false);
+  const [showCreditCardForm, setShowCreditCardForm] = useState(false);
+  const [collapsedProjects, setCollapsedProjects] = useState<Set<string>>(new Set());
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [showMonthlyRecap, setShowMonthlyRecap] = useState(false);
+  
+  // Get goal limits based on premium status
+  const goalLimits = getGoalLimits(user?.isPremium);
+  
+  // Monthly stats
+  const [monthlyStats, setMonthlyStats] = useState({
+    tasks: { completed: 0, incomplete: 0, total: 0 },
+    workouts: { completed: 0, missed: 0, total: 0 },
+    projects: { completed: 0, inProgress: 0, total: 0 },
+    goals: { completed: 0, inProgress: 0, total: 0 }
+  });
+  
+  // Credit card form state
+  const [cardForm, setCardForm] = useState({
+    cardNumber: '',
+    expiryDate: '',
+    cardholderName: '',
+    cvv: '',
+    billingAddress: {
+      street: '',
+      city: '',
+      state: '',
+      zipCode: '',
+      country: 'United States'
+    }
+  });
+  const [cardFormErrors, setCardFormErrors] = useState<{[key: string]: string}>({});
+  
+  // Check streak status and daily reset on component mount
+  useEffect(() => {
+    checkAndUpdateStreak();
+    checkAndResetDaily();
+    updateMonthlyStats();
+    
+    // Set up an interval to check for date changes
+    const intervalId = setInterval(() => {
+      checkAndUpdateStreak();
+      checkAndResetDaily();
+      updateMonthlyStats();
+    }, 60000); // Check every minute
+    
+    return () => clearInterval(intervalId);
+  }, []);
+  
+  const updateMonthlyStats = () => {
+    const taskStats = getMonthlyTaskStats();
+    const workoutStats = getMonthlyWorkoutStats();
+    const projectStats = getMonthlyProjectStats();
+    const goalStats = getMonthlyGoalStats();
+    
+    setMonthlyStats({
+      tasks: taskStats,
+      workouts: workoutStats,
+      projects: projectStats,
+      goals: goalStats
+    });
+  };
+  
+  const handleDeleteGoal = (id: string) => {
+    Alert.alert(
+      'Delete Goal',
+      'Are you sure you want to delete this goal?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete', 
+          onPress: () => {
+            deleteGoal(id);
+            Alert.alert('Success', 'Goal deleted successfully');
+          },
+          style: 'destructive'
+        },
+      ]
+    );
+  };
+  
+  const handleDeleteTask = (id: string) => {
+    Alert.alert(
+      'Delete Task',
+      'Are you sure you want to delete this task?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete', 
+          onPress: () => {
+            deleteTask(id);
+            Alert.alert('Success', 'Task deleted successfully');
+          },
+          style: 'destructive'
+        },
+      ]
+    );
+  };
+  
+  const handleToggleComplete = (id: string, completed: boolean) => {
+    toggleComplete(id);
+    // Update monthly stats after toggling task completion
+    setTimeout(updateMonthlyStats, 100);
+  };
+  
+  // Filter goals based on type and sort (incomplete ones first, then by progress)
+  const filteredGoals = goals
+    .filter(goal => filterType === 'all' || goal.type === filterType)
+    .sort((a, b) => {
+      const aCompleted = a.status === 'completed';
+      const bCompleted = b.status === 'completed';
+      if (aCompleted !== bCompleted) {
+        return aCompleted ? 1 : -1;
+      }
+      return (b.progress || 0) - (a.progress || 0);
+    });
+  
+  const handleAddShortTermGoal = () => {
+    // Check goal limit before navigating
+    if (goals.length >= goalLimits.total) {
+      if (!user?.isPremium) {
+        Alert.alert(
+          'Limit Reached', 
+          `You've reached the maximum of ${goalLimits.total} goals. Upgrade to Premium for up to 12 goals!`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Upgrade to Premium', onPress: () => setShowPremiumModal(true) }
+          ]
+        );
+      } else {
+        Alert.alert('Limit Reached', `You've reached the maximum of ${goalLimits.total} goals.`);
+      }
+      return;
+    }
+    
+    router.push('/add-goal?type=short-term');
+    setShowAddGoalModal(false);
+  };
+  
+  const handleAddLongTermGoal = () => {
+    // Check goal limit before navigating
+    if (goals.length >= goalLimits.total) {
+      if (!user?.isPremium) {
+        Alert.alert(
+          'Limit Reached', 
+          `You've reached the maximum of ${goalLimits.total} goals. Upgrade to Premium for up to 12 goals!`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Upgrade to Premium', onPress: () => setShowPremiumModal(true) }
+          ]
+        );
+      } else {
+        Alert.alert('Limit Reached', `You've reached the maximum of ${goalLimits.total} goals.`);
+      }
+      return;
+    }
+    
+    router.push('/add-goal?type=long-term');
+    setShowAddGoalModal(false);
+  };
+  
+  // Get only general tasks (tasks without projectId)
+  const generalTasks = tasks.filter(task => !task.projectId);
+  
+  // Group project tasks by project
+  const tasksByProject = React.useMemo(() => {
+    const grouped: { [key: string]: typeof tasks } = {};
+    
+    // Only add tasks that have projectId
+    projects.forEach(project => {
+      const projectTasks = tasks.filter(task => task.projectId === project.id);
+      if (projectTasks.length > 0) {
+        grouped[project.id] = projectTasks;
+      }
+    });
+    
+    return grouped;
+  }, [tasks, projects]);
+  
+  const toggleProjectCollapse = (projectId: string) => {
+    const newCollapsed = new Set(collapsedProjects);
+    if (newCollapsed.has(projectId)) {
+      newCollapsed.delete(projectId);
+    } else {
+      newCollapsed.add(projectId);
+    }
+    setCollapsedProjects(newCollapsed);
+  };
+  
+  const getProjectInfo = (projectId: string) => {
+    const project = projects.find(p => p.id === projectId);
+    return project ? { name: project.name, color: project.color } : null;
+  };
+  
+  const premiumFeatures = [
+    'Projects - Create and manage up to 5 projects to organize your tasks',
+    'AI workout assistant - Get personalized workout plans tailored to your fitness goals',
+    'Shared to-do lists - Collaborate on tasks with friends and family',
+    'Up to 30 tasks - Expand beyond the standard 8 task limit',
+    'Up to 12 goals - Expand beyond the standard 3 goal limit',
+    'Up to 20 tasks per project - Organize your work efficiently',
+    'Monthly recap - Detailed insights on completed and unfinished tasks/workouts'
+  ];
+
+  const handleUpgradeToPremium = () => {
+    setShowPaymentOptions(true);
+  };
+
+  const handleApplePayPurchase = async () => {
+    if (Platform.OS !== 'ios') {
+      Alert.alert('Not Available', 'Apple Pay is only available on iOS devices.');
+      return;
+    }
+
+    setIsProcessingPayment(true);
+    
+    try {
+      // Simulate Apple Pay payment process
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Simulate successful payment
+      await upgradeToPremium();
+      
+      Alert.alert(
+        'Payment Successful!',
+        'Welcome to Premium! You now have access to all premium features.',
+        [
+          {
+            text: 'Get Started',
+            onPress: () => {
+              handleClosePremiumModal();
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      Alert.alert('Payment Failed', 'There was an issue processing your payment. Please try again.');
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
+  const validateCardForm = () => {
+    const errors: {[key: string]: string} = {};
+    
+    // Card number validation (16 digits)
+    const cardNumber = cardForm.cardNumber.replace(/\s/g, '');
+    if (!cardNumber) {
+      errors.cardNumber = 'Card number is required';
+    } else if (!/^\d{16}$/.test(cardNumber)) {
+      errors.cardNumber = 'Please enter a valid 16-digit card number';
+    }
+    
+    // Expiry date validation (MM/YY)
+    if (!cardForm.expiryDate) {
+      errors.expiryDate = 'Expiry date is required';
+    } else if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(cardForm.expiryDate)) {
+      errors.expiryDate = 'Please enter date in MM/YY format';
+    } else {
+      // Check if date is not in the past
+      const [month, year] = cardForm.expiryDate.split('/');
+      const currentDate = new Date();
+      const currentYear = currentDate.getFullYear() % 100;
+      const currentMonth = currentDate.getMonth() + 1;
+      
+      if (parseInt(year) < currentYear || (parseInt(year) === currentYear && parseInt(month) < currentMonth)) {
+        errors.expiryDate = 'Card has expired';
+      }
+    }
+    
+    // Cardholder name validation
+    if (!cardForm.cardholderName.trim()) {
+      errors.cardholderName = 'Cardholder name is required';
+    } else if (cardForm.cardholderName.trim().length < 2) {
+      errors.cardholderName = 'Please enter a valid name';
+    }
+    
+    // CVV validation (3-4 digits)
+    if (!cardForm.cvv) {
+      errors.cvv = 'CVV is required';
+    } else if (!/^\d{3,4}$/.test(cardForm.cvv)) {
+      errors.cvv = 'CVV must be 3 or 4 digits';
+    }
+    
+    // Billing address validation
+    if (!cardForm.billingAddress.street.trim()) {
+      errors.street = 'Street address is required';
+    }
+    
+    if (!cardForm.billingAddress.city.trim()) {
+      errors.city = 'City is required';
+    }
+    
+    if (!cardForm.billingAddress.state.trim()) {
+      errors.state = 'State is required';
+    }
+    
+    if (!cardForm.billingAddress.zipCode.trim()) {
+      errors.zipCode = 'ZIP code is required';
+    } else if (!/^\d{5}(-\d{4})?$/.test(cardForm.billingAddress.zipCode)) {
+      errors.zipCode = 'Please enter a valid ZIP code';
+    }
+    
+    setCardFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const formatCardNumber = (text: string) => {
+    // Remove all non-digits
+    const cleaned = text.replace(/\D/g, '');
+    // Add spaces every 4 digits
+    const formatted = cleaned.replace(/(\d{4})(?=\d)/g, '$1 ');
+    return formatted.substring(0, 19); // Max 16 digits + 3 spaces
+  };
+
+  const formatExpiryDate = (text: string) => {
+    // Remove all non-digits
+    const cleaned = text.replace(/\D/g, '');
+    // Add slash after 2 digits
+    if (cleaned.length >= 2) {
+      return cleaned.substring(0, 2) + '/' + cleaned.substring(2, 4);
+    }
+    return cleaned;
+  };
+
+  const handleCreditCardPurchase = () => {
+    setShowCreditCardForm(true);
+  };
+
+  const handleProcessCreditCardPayment = async () => {
+    if (!validateCardForm()) {
+      Alert.alert('Invalid Information', 'Please check all fields and try again.');
+      return;
+    }
+
+    setIsProcessingPayment(true);
+    
+    try {
+      // Simulate credit card payment processing with more realistic delay
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      // Simulate successful payment processing
+      await upgradeToPremium();
+      
+      Alert.alert(
+        'Payment Successful!',
+        'Welcome to Premium! You now have access to all premium features.',
+        [
+          {
+            text: 'Get Started',
+            onPress: () => {
+              handleClosePremiumModal();
+              // Reset form
+              resetCardForm();
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      Alert.alert('Payment Failed', 'There was an issue processing your payment. Please try again.');
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
+  const resetCardForm = () => {
+    setCardForm({
+      cardNumber: '',
+      expiryDate: '',
+      cardholderName: '',
+      cvv: '',
+      billingAddress: {
+        street: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        country: 'United States'
+      }
+    });
+    setCardFormErrors({});
+  };
+
+  const handleBackToPaymentOptions = () => {
+    setShowCreditCardForm(false);
+    setCardFormErrors({});
+  };
+
+  const handleBackToFeatures = () => {
+    setShowPaymentOptions(false);
+    setShowCreditCardForm(false);
+  };
+
+  const handleShowPremiumModal = () => {
+    setShowPremiumModal(true);
+    setShowPaymentOptions(false);
+    setShowCreditCardForm(false);
+  };
+
+  const handleClosePremiumModal = () => {
+    setShowPremiumModal(false);
+    setShowPaymentOptions(false);
+    setShowCreditCardForm(false);
+    resetCardForm();
+  };
+  
+  // Get current month name
+  const getCurrentMonthName = () => {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    const currentMonth = new Date().getMonth();
+    return months[currentMonth];
+  };
+  
+  // Calculate percentage for progress bars
+  const calculatePercentage = (completed: number, total: number) => {
+    if (total === 0) return 0;
+    return Math.round((completed / total) * 100);
+  };
+  
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background.secondary }]}>
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        <View style={styles.header}>
+          <View style={styles.headerContent}>
+            <View style={styles.headerLeft}>
+              <Text style={[styles.title, { color: colors.text.primary, fontFamily: colors.fonts?.bold }]}>Welcome Back!</Text>
+              <Text style={[styles.subtitle, { color: colors.text.secondary, fontFamily: colors.fonts?.medium }]}>
+                Keep up the great work
+              </Text>
+            </View>
+            
+            {!user?.isPremium && (
+              <TouchableOpacity 
+                style={[styles.premiumButton, { backgroundColor: colors.primary }]}
+                onPress={handleShowPremiumModal}
+              >
+                <Crown size={20} color="white" />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+        
+        {/* Daily Streak Section */}
+        <View style={[styles.streakSection, { backgroundColor: colors.background.primary }]}>
+          <View style={styles.streakHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
+              Daily Streak
+            </Text>
+          </View>
+          
+          <View style={styles.streakContent}>
+            <StreakCounter streak={currentStreak} size="large" type="daily" />
+            <Text style={[styles.streakDescription, { color: colors.text.secondary, fontFamily: colors.fonts?.regular }]}>
+              {currentStreak === 0 
+                ? "Complete a general task to start your streak!" 
+                : currentStreak === 1 
+                ? "Great start! Keep it going." 
+                : `Amazing! You're on fire with ${currentStreak} days!`}
+            </Text>
+          </View>
+        </View>
+
+        {/* Monthly Recap Section */}
+        <View style={[styles.monthlyRecapSection, { backgroundColor: colors.background.primary }]}>
+          <TouchableOpacity 
+            style={styles.monthlyRecapHeader}
+            onPress={() => {
+              if (!user?.isPremium) {
+                handleShowPremiumModal();
+              } else {
+                setShowMonthlyRecap(!showMonthlyRecap);
+              }
+            }}
+          >
+            <View style={styles.monthlyRecapTitleContainer}>
+              <BarChart size={20} color={colors.primary} />
+              <Text style={[styles.sectionTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
+                {getCurrentMonthName()} Recap
+              </Text>
+              <View style={styles.premiumFeatureTag}>
+                <Crown size={16} color={colors.primary} />
+                <Text style={[styles.premiumFeatureText, { color: colors.primary, fontFamily: colors.fonts?.medium }]}>
+                  Premium
+                </Text>
+              </View>
+            </View>
+            {user?.isPremium ? (
+              showMonthlyRecap ? (
+                <ChevronDown size={20} color={colors.text.secondary} />
+              ) : (
+                <ChevronRight size={20} color={colors.text.secondary} />
+              )
+            ) : (
+              <Crown size={20} color={colors.primary} />
+            )}
+          </TouchableOpacity>
+          
+          {user?.isPremium && showMonthlyRecap && (
+            <View style={styles.monthlyRecapContent}>
+              {/* Tasks Stats */}
+              <View style={styles.recapCategory}>
+                <Text style={[styles.recapCategoryTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
+                  Tasks
+                </Text>
+                <View style={styles.recapStats}>
+                  <View style={styles.recapStatItem}>
+                    <Text style={[styles.recapStatValue, { color: colors.success, fontFamily: colors.fonts?.bold }]}>
+                      {monthlyStats.tasks.completed}
+                    </Text>
+                    <Text style={[styles.recapStatLabel, { color: colors.text.secondary, fontFamily: colors.fonts?.regular }]}>
+                      Completed
+                    </Text>
+                  </View>
+                  <View style={styles.recapStatItem}>
+                    <Text style={[styles.recapStatValue, { color: colors.danger, fontFamily: colors.fonts?.bold }]}>
+                      {monthlyStats.tasks.incomplete}
+                    </Text>
+                    <Text style={[styles.recapStatLabel, { color: colors.text.secondary, fontFamily: colors.fonts?.regular }]}>
+                      Incomplete
+                    </Text>
+                  </View>
+                  <View style={styles.recapStatItem}>
+                    <Text style={[styles.recapStatValue, { color: colors.text.primary, fontFamily: colors.fonts?.bold }]}>
+                      {monthlyStats.tasks.total}
+                    </Text>
+                    <Text style={[styles.recapStatLabel, { color: colors.text.secondary, fontFamily: colors.fonts?.regular }]}>
+                      Total
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.recapProgressContainer}>
+                  <View style={[styles.recapProgressBackground, { backgroundColor: colors.border }]}>
+                    <View 
+                      style={[
+                        styles.recapProgressFill, 
+                        { 
+                          backgroundColor: colors.success,
+                          width: `${calculatePercentage(monthlyStats.tasks.completed, monthlyStats.tasks.total)}%` 
+                        }
+                      ]} 
+                    />
+                  </View>
+                  <Text style={[styles.recapProgressText, { color: colors.text.secondary, fontFamily: colors.fonts?.medium }]}>
+                    {calculatePercentage(monthlyStats.tasks.completed, monthlyStats.tasks.total)}% Completion Rate
+                  </Text>
+                </View>
+              </View>
+              
+              {/* Workouts Stats */}
+              <View style={styles.recapCategory}>
+                <Text style={[styles.recapCategoryTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
+                  Workouts
+                </Text>
+                <View style={styles.recapStats}>
+                  <View style={styles.recapStatItem}>
+                    <Text style={[styles.recapStatValue, { color: colors.success, fontFamily: colors.fonts?.bold }]}>
+                      {monthlyStats.workouts.completed}
+                    </Text>
+                    <Text style={[styles.recapStatLabel, { color: colors.text.secondary, fontFamily: colors.fonts?.regular }]}>
+                      Completed
+                    </Text>
+                  </View>
+                  <View style={styles.recapStatItem}>
+                    <Text style={[styles.recapStatValue, { color: colors.danger, fontFamily: colors.fonts?.bold }]}>
+                      {monthlyStats.workouts.missed}
+                    </Text>
+                    <Text style={[styles.recapStatLabel, { color: colors.text.secondary, fontFamily: colors.fonts?.regular }]}>
+                      Missed
+                    </Text>
+                  </View>
+                  <View style={styles.recapStatItem}>
+                    <Text style={[styles.recapStatValue, { color: colors.text.primary, fontFamily: colors.fonts?.bold }]}>
+                      {monthlyStats.workouts.total}
+                    </Text>
+                    <Text style={[styles.recapStatLabel, { color: colors.text.secondary, fontFamily: colors.fonts?.regular }]}>
+                      Planned
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.recapProgressContainer}>
+                  <View style={[styles.recapProgressBackground, { backgroundColor: colors.border }]}>
+                    <View 
+                      style={[
+                        styles.recapProgressFill, 
+                        { 
+                          backgroundColor: colors.success,
+                          width: `${calculatePercentage(monthlyStats.workouts.completed, monthlyStats.workouts.total)}%` 
+                        }
+                      ]} 
+                    />
+                  </View>
+                  <Text style={[styles.recapProgressText, { color: colors.text.secondary, fontFamily: colors.fonts?.medium }]}>
+                    {calculatePercentage(monthlyStats.workouts.completed, monthlyStats.workouts.total)}% Completion Rate
+                  </Text>
+                </View>
+              </View>
+              
+              {/* Projects Stats */}
+              <View style={styles.recapCategory}>
+                <Text style={[styles.recapCategoryTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
+                  Projects
+                </Text>
+                <View style={styles.recapStats}>
+                  <View style={styles.recapStatItem}>
+                    <Text style={[styles.recapStatValue, { color: colors.success, fontFamily: colors.fonts?.bold }]}>
+                      {monthlyStats.projects.completed}
+                    </Text>
+                    <Text style={[styles.recapStatLabel, { color: colors.text.secondary, fontFamily: colors.fonts?.regular }]}>
+                      Completed
+                    </Text>
+                  </View>
+                  <View style={styles.recapStatItem}>
+                    <Text style={[styles.recapStatValue, { color: colors.warning, fontFamily: colors.fonts?.bold }]}>
+                      {monthlyStats.projects.inProgress}
+                    </Text>
+                    <Text style={[styles.recapStatLabel, { color: colors.text.secondary, fontFamily: colors.fonts?.regular }]}>
+                      In Progress
+                    </Text>
+                  </View>
+                  <View style={styles.recapStatItem}>
+                    <Text style={[styles.recapStatValue, { color: colors.text.primary, fontFamily: colors.fonts?.bold }]}>
+                      {monthlyStats.projects.total}
+                    </Text>
+                    <Text style={[styles.recapStatLabel, { color: colors.text.secondary, fontFamily: colors.fonts?.regular }]}>
+                      Total
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.recapProgressContainer}>
+                  <View style={[styles.recapProgressBackground, { backgroundColor: colors.border }]}>
+                    <View 
+                      style={[
+                        styles.recapProgressFill, 
+                        { 
+                          backgroundColor: colors.success,
+                          width: `${calculatePercentage(monthlyStats.projects.completed, monthlyStats.projects.total)}%` 
+                        }
+                      ]} 
+                    />
+                  </View>
+                  <Text style={[styles.recapProgressText, { color: colors.text.secondary, fontFamily: colors.fonts?.medium }]}>
+                    {calculatePercentage(monthlyStats.projects.completed, monthlyStats.projects.total)}% Completion Rate
+                  </Text>
+                </View>
+              </View>
+              
+              {/* Goals Stats */}
+              <View style={styles.recapCategory}>
+                <Text style={[styles.recapCategoryTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
+                  Goals
+                </Text>
+                <View style={styles.recapStats}>
+                  <View style={styles.recapStatItem}>
+                    <Text style={[styles.recapStatValue, { color: colors.success, fontFamily: colors.fonts?.bold }]}>
+                      {monthlyStats.goals.completed}
+                    </Text>
+                    <Text style={[styles.recapStatLabel, { color: colors.text.secondary, fontFamily: colors.fonts?.regular }]}>
+                      Completed
+                    </Text>
+                  </View>
+                  <View style={styles.recapStatItem}>
+                    <Text style={[styles.recapStatValue, { color: colors.warning, fontFamily: colors.fonts?.bold }]}>
+                      {monthlyStats.goals.inProgress}
+                    </Text>
+                    <Text style={[styles.recapStatLabel, { color: colors.text.secondary, fontFamily: colors.fonts?.regular }]}>
+                      In Progress
+                    </Text>
+                  </View>
+                  <View style={styles.recapStatItem}>
+                    <Text style={[styles.recapStatValue, { color: colors.text.primary, fontFamily: colors.fonts?.bold }]}>
+                      {monthlyStats.goals.total}
+                    </Text>
+                    <Text style={[styles.recapStatLabel, { color: colors.text.secondary, fontFamily: colors.fonts?.regular }]}>
+                      Total
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.recapProgressContainer}>
+                  <View style={[styles.recapProgressBackground, { backgroundColor: colors.border }]}>
+                    <View 
+                      style={[
+                        styles.recapProgressFill, 
+                        { 
+                          backgroundColor: colors.success,
+                          width: `${calculatePercentage(monthlyStats.goals.completed, monthlyStats.goals.total)}%` 
+                        }
+                      ]} 
+                    />
+                  </View>
+                  <Text style={[styles.recapProgressText, { color: colors.text.secondary, fontFamily: colors.fonts?.medium }]}>
+                    {calculatePercentage(monthlyStats.goals.completed, monthlyStats.goals.total)}% Completion Rate
+                  </Text>
+                </View>
+              </View>
+              
+              <TouchableOpacity 
+                style={[styles.viewDetailedRecapButton, { borderColor: colors.border }]}
+                onPress={() => {
+                  // This could navigate to a more detailed recap screen in the future
+                  Alert.alert('Coming Soon', 'Detailed monthly analytics will be available in a future update!');
+                }}
+              >
+                <Calendar size={16} color={colors.primary} />
+                <Text style={[styles.viewDetailedRecapText, { color: colors.primary, fontFamily: colors.fonts?.medium }]}>
+                  View Detailed Monthly Analytics
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          
+          {!user?.isPremium && (
+            <View style={styles.premiumFeatureTeaser}>
+              <Text style={[styles.premiumFeatureTeaser, { color: colors.text.secondary, fontFamily: colors.fonts?.regular }]}>
+                Upgrade to Premium to access detailed monthly statistics and insights
+              </Text>
+              <Button 
+                title="Upgrade to Premium" 
+                onPress={handleShowPremiumModal}
+                variant="primary"
+                size="small"
+                style={styles.upgradeButton}
+              />
+            </View>
+          )}
+        </View>
+
+        {/* Weekly Workout Tracker */}
+        <WeeklyWorkoutTracker />
+        
+        {/* General Tasks Section */}
+        {generalTasks.length > 0 && (
+          <View style={styles.tasksSection}>
+            <View style={styles.tasksSectionHeader}>
+              <View style={styles.tasksTitleContainer}>
+                <Folder size={20} color={colors.primary} />
+                <Text style={[styles.sectionTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
+                  Today's Tasks
+                </Text>
+              </View>
+            </View>
+            
+            <View style={[styles.generalTasksGroup, { backgroundColor: colors.background.primary }]}>
+              <View style={styles.generalTasksHeader}>
+                <Text style={[styles.generalTasksTitle, { color: colors.text.primary }]}>
+                  Daily Tasks ({generalTasks.length})
+                </Text>
+              </View>
+              
+              <View style={styles.generalTasksList}>
+                {generalTasks
+                  .sort((a, b) => {
+                    // Sort by completion status first
+                    if (a.completed !== b.completed) {
+                      return a.completed ? 1 : -1;
+                    }
+                    // Then sort by priority
+                    const priorityOrder = { high: 0, medium: 1, low: 2 };
+                    return priorityOrder[a.priority] - priorityOrder[b.priority];
+                  })
+                  .map(task => (
+                    <TaskItem
+                      key={task.id}
+                      task={task}
+                      onToggle={() => handleToggleComplete(task.id, task.completed)}
+                      onDelete={() => handleDeleteTask(task.id)}
+                      onPress={() => router.push(`/task/${task.id}`)}
+                    />
+                  ))}
+              </View>
+            </View>
+          </View>
+        )}
+        
+        {/* Project Tasks Section */}
+        <View style={styles.projectTasksSection}>
+          <TouchableOpacity 
+            style={styles.tasksSectionHeader}
+            onPress={() => !user?.isPremium && handleShowPremiumModal()}
+            activeOpacity={user?.isPremium ? 1 : 0.7}
+          >
+            <View style={styles.tasksTitleContainer}>
+              <Folder size={20} color={colors.secondary} />
+              <Text style={[styles.sectionTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
+                Projects
+              </Text>
+            </View>
+            {!user?.isPremium && (
+              <View style={styles.premiumFeatureTag}>
+                <Crown size={16} color={colors.primary} />
+                <Text style={[styles.premiumFeatureText, { color: colors.primary, fontFamily: colors.fonts?.medium }]}>
+                  Premium
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
+          
+          {Object.keys(tasksByProject).length > 0 ? (
+            Object.entries(tasksByProject).map(([projectId, projectTasks]) => {
+              const projectInfo = getProjectInfo(projectId);
+              if (!projectInfo) return null;
+              
+              const isCollapsed = collapsedProjects.has(projectId);
+              const incompleteTasks = projectTasks.filter(task => !task.completed);
+              const completedTasks = projectTasks.filter(task => task.completed);
+              
+              return (
+                <View key={projectId} style={[styles.projectGroup, { backgroundColor: colors.background.primary }]}>
+                  <TouchableOpacity 
+                    style={styles.projectHeader}
+                    onPress={() => toggleProjectCollapse(projectId)}
+                  >
+                    <View style={styles.projectHeaderLeft}>
+                      <View style={[styles.projectColorDot, { backgroundColor: projectInfo.color }]} />
+                      <Text style={[styles.projectName, { color: colors.text.primary }]}>
+                        {projectInfo.name}
+                      </Text>
+                      <Text style={[styles.taskCount, { color: colors.text.secondary }]}>
+                        ({projectTasks.length})
+                      </Text>
+                    </View>
+                    {isCollapsed ? (
+                      <ChevronRight size={20} color={colors.text.secondary} />
+                    ) : (
+                      <ChevronDown size={20} color={colors.text.secondary} />
+                    )}
+                  </TouchableOpacity>
+                  
+                  {!isCollapsed && (
+                    <View style={styles.projectTasks}>
+                      {/* Show incomplete tasks first */}
+                      {incompleteTasks.map(task => (
+                        <TaskItem
+                          key={task.id}
+                          task={task}
+                          onToggle={() => handleToggleComplete(task.id, task.completed)}
+                          onDelete={() => handleDeleteTask(task.id)}
+                          onPress={() => router.push(`/task/${task.id}`)}
+                        />
+                      ))}
+                      
+                      {/* Show completed tasks */}
+                      {completedTasks.map(task => (
+                        <TaskItem
+                          key={task.id}
+                          task={task}
+                          onToggle={() => handleToggleComplete(task.id, task.completed)}
+                          onDelete={() => handleDeleteTask(task.id)}
+                          onPress={() => router.push(`/task/${task.id}`)}
+                        />
+                      ))}
+                    </View>
+                  )}
+                </View>
+              );
+            })
+          ) : (
+            !user?.isPremium && (
+              <View style={[styles.premiumProjectsEmptyState, { backgroundColor: colors.background.primary }]}>
+                <Crown size={32} color={colors.primary} style={styles.premiumProjectsIcon} />
+                <Text style={[styles.premiumProjectsTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
+                  Unlock Project Mode
+                </Text>
+                <Text style={[styles.premiumProjectsDescription, { color: colors.text.secondary, fontFamily: colors.fonts?.regular }]}>
+                  Organize your tasks with advanced project management. Create up to 5 projects with 20 tasks each.
+                </Text>
+                <Button 
+                  title="Upgrade to Premium" 
+                  onPress={handleShowPremiumModal}
+                  variant="primary"
+                  size="medium"
+                  style={styles.upgradeProjectsButton}
+                />
+              </View>
+            )
+          )}
+        </View>
+        
+        {/* Goals Section */}
+        <View style={styles.goalsSection}>
+          <View style={styles.goalsSectionHeader}>
+            <View style={styles.goalsTitleContainer}>
+              <Target size={20} color={colors.success} />
+              <Text style={[styles.sectionTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
+                Your Goals
+              </Text>
+            </View>
+            <Text style={[styles.goalCount, { color: colors.text.secondary, fontFamily: colors.fonts?.medium }]}>
+              ({goals.length}/{goalLimits.total})
+            </Text>
+            {!user?.isPremium && (
+              <Text style={[styles.premiumHint, { color: colors.primary }]}>
+                • Premium: 12 goals
+              </Text>
+            )}
+          </View>
+          
+          {/* Filter and Add Goal buttons moved below the title */}
+          <View style={styles.goalsActions}>
+            <TouchableOpacity 
+              style={[
+                styles.filterButton, 
+                { borderColor: colors.border }
+              ]}
+              onPress={() => {
+                const nextFilter = filterType === 'all' 
+                  ? 'short-term' 
+                  : filterType === 'short-term' 
+                  ? 'long-term' 
+                  : 'all';
+                setFilterType(nextFilter);
+              }}
+            >
+              <Filter size={16} color={colors.text.secondary} />
+              <Text style={[styles.filterText, { color: colors.text.secondary, fontFamily: colors.fonts?.medium }]}>
+                {filterType === 'all' 
+                  ? 'All' 
+                  : filterType === 'short-term' 
+                  ? 'Short Term' 
+                  : 'Long Term'}
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[
+                styles.addButton, 
+                { 
+                  backgroundColor: goals.length >= goalLimits.total ? colors.text.light : colors.primary,
+                  opacity: goals.length >= goalLimits.total ? 0.5 : 1
+                }
+              ]}
+              onPress={() => {
+                if (goals.length >= goalLimits.total) {
+                  if (!user?.isPremium) {
+                    Alert.alert(
+                      'Limit Reached', 
+                      `You've reached the maximum of ${goalLimits.total} goals. Upgrade to Premium for up to 12 goals!`,
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        { text: 'Upgrade to Premium', onPress: () => setShowPremiumModal(true) }
+                      ]
+                    );
+                  } else {
+                    Alert.alert('Limit Reached', `You've reached the maximum of ${goalLimits.total} goals.`);
+                  }
+                } else {
+                  setShowAddGoalModal(true);
+                }
+              }}
+              disabled={goals.length >= goalLimits.total}
+            >
+              <Text style={[styles.addButtonText, { fontFamily: colors.fonts?.semiBold }]}>Add Goal</Text>
+            </TouchableOpacity>
+          </View>
+          
+          {filteredGoals.length === 0 ? (
+            <View style={[styles.emptyContainer, { backgroundColor: colors.background.primary }]}>
+              <Text style={[styles.emptyText, { color: colors.text.secondary, fontFamily: colors.fonts?.regular }]}>
+                {filterType === 'all' 
+                  ? 'No goals yet. Create your first goal to get started!' 
+                  : `No ${filterType} goals yet. Add one to get started!`}
+              </Text>
+              <TouchableOpacity 
+                style={[
+                  styles.addGoalButton, 
+                  { 
+                    backgroundColor: goals.length >= goalLimits.total ? colors.text.light : colors.primary,
+                    opacity: goals.length >= goalLimits.total ? 0.5 : 1
+                  }
+                ]}
+                onPress={() => {
+                  if (goals.length >= goalLimits.total) {
+                    if (!user?.isPremium) {
+                      Alert.alert(
+                        'Limit Reached', 
+                        `You've reached the maximum of ${goalLimits.total} goals. Upgrade to Premium for up to 12 goals!`,
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          { text: 'Upgrade to Premium', onPress: () => setShowPremiumModal(true) }
+                        ]
+                      );
+                    } else {
+                      Alert.alert('Limit Reached', `You've reached the maximum of ${goalLimits.total} goals.`);
+                    }
+                  } else {
+                    setShowAddGoalModal(true);
+                  }
+                }}
+                disabled={goals.length >= goalLimits.total}
+              >
+                <Text style={[styles.addGoalButtonText, { fontFamily: colors.fonts?.semiBold }]}>Add Goal</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            filteredGoals.map(goal => (
+              <GoalItem
+                key={goal.id}
+                goal={goal}
+                onPress={() => router.push(`/goal/${goal.id}`)}
+                onDelete={() => handleDeleteGoal(goal.id)}
+              />
+            ))
+          )}
+        </View>
+      </ScrollView>
+      
+      {/* Add Goal Modal */}
+      <Modal
+        visible={showAddGoalModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowAddGoalModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.background.primary }]}>
+            <Text style={[styles.modalTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
+              Add New Goal
+            </Text>
+            
+            <TouchableOpacity 
+              style={[styles.goalTypeButton, { borderColor: colors.border }]}
+              onPress={handleAddShortTermGoal}
+            >
+              <Target size={20} color={colors.goalTypes?.shortTerm} />
+              <View style={styles.goalTypeInfo}>
+                <Text style={[styles.goalTypeTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
+                  Short Term Goal
+                </Text>
+                <Text style={[styles.goalTypeDescription, { color: colors.text.secondary, fontFamily: colors.fonts?.regular }]}>
+                  Achievable in days or weeks
+                </Text>
+              </View>
+              <ArrowRight size={16} color={colors.text.secondary} />
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.goalTypeButton, { borderColor: colors.border }]}
+              onPress={handleAddLongTermGoal}
+            >
+              <Target size={20} color={colors.goalTypes?.longTerm} />
+              <View style={styles.goalTypeInfo}>
+                <Text style={[styles.goalTypeTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
+                  Long Term Goal
+                </Text>
+                <Text style={[styles.goalTypeDescription, { color: colors.text.secondary, fontFamily: colors.fonts?.regular }]}>
+                  Achievable in months or years
+                </Text>
+              </View>
+              <ArrowRight size={16} color={colors.text.secondary} />
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.cancelButton, { borderColor: colors.border }]}
+              onPress={() => setShowAddGoalModal(false)}
+            >
+              <Text style={[styles.cancelButtonText, { color: colors.text.secondary, fontFamily: colors.fonts?.medium }]}>
+                Cancel
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Premium Features Modal */}
+      <Modal
+        visible={showPremiumModal && !showPaymentOptions && !showCreditCardForm}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={handleClosePremiumModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.premiumModalContent, { backgroundColor: colors.background.primary }]}>
+            <View style={styles.premiumHeader}>
+              <View style={styles.premiumTitleContainer}>
+                <Crown size={24} color={colors.primary} />
+                <Text style={[styles.premiumTitle, { color: colors.text.primary, fontFamily: colors.fonts?.bold }]}>
+                  Premium Plan
+                </Text>
+              </View>
+              <TouchableOpacity 
+                style={styles.closeButton}
+                onPress={handleClosePremiumModal}
+              >
+                <X size={24} color={colors.text.secondary} />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.premiumPricing}>
+              <Text style={[styles.premiumPrice, { color: colors.primary, fontFamily: colors.fonts?.bold }]}>
+                $3.99
+              </Text>
+              <Text style={[styles.premiumPeriod, { color: colors.text.secondary, fontFamily: colors.fonts?.medium }]}>
+                per month
+              </Text>
+            </View>
+            
+            <View style={styles.premiumFeatures}>
+              <Text style={[styles.featuresTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
+                Premium Features
+              </Text>
+              
+              {premiumFeatures.map((feature, index) => (
+                <View key={index} style={styles.featureItem}>
+                  <Check size={20} color={colors.success} />
+                  <Text style={[styles.featureText, { color: colors.text.secondary, fontFamily: colors.fonts?.regular }]}>
+                    {feature}
+                  </Text>
+                </View>
+              ))}
+            </View>
+            
+            <View style={styles.premiumActions}>
+              <TouchableOpacity 
+                style={[styles.upgradeToPremiumButton, { backgroundColor: colors.primary }]}
+                onPress={handleUpgradeToPremium}
+              >
+                <Crown size={20} color="white" />
+                <Text style={[styles.upgradeToPremiumButtonText, { fontFamily: colors.fonts?.semiBold }]}>
+                  Upgrade to Premium
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.cancelPremiumButton}
+                onPress={handleClosePremiumModal}
+              >
+                <Text style={[styles.cancelPremiumButtonText, { color: colors.text.secondary, fontFamily: colors.fonts?.medium }]}>
+                  Maybe Later
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Payment Options Modal */}
+      <Modal
+        visible={showPaymentOptions && !showCreditCardForm}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowPaymentOptions(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.premiumModalContent, { backgroundColor: colors.background.primary }]}>
+            <View style={styles.premiumHeader}>
+              <TouchableOpacity 
+                style={styles.backButton}
+                onPress={handleBackToFeatures}
+              >
+                <Text style={[styles.backButtonText, { color: colors.primary, fontFamily: colors.fonts?.medium }]}>
+                  ← Back
+                </Text>
+              </TouchableOpacity>
+              <View style={styles.premiumTitleContainer}>
+                <Crown size={24} color={colors.primary} />
+                <Text style={[styles.premiumTitle, { color: colors.text.primary, fontFamily: colors.fonts?.bold }]}>
+                  Choose Payment
+                </Text>
+              </View>
+              <TouchableOpacity 
+                style={styles.closeButton}
+                onPress={handleClosePremiumModal}
+              >
+                <X size={24} color={colors.text.secondary} />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.premiumPricing}>
+              <Text style={[styles.premiumPrice, { color: colors.primary, fontFamily: colors.fonts?.bold }]}>
+                $3.99
+              </Text>
+              <Text style={[styles.premiumPeriod, { color: colors.text.secondary, fontFamily: colors.fonts?.medium }]}>
+                per month
+              </Text>
+            </View>
+            
+            <View style={styles.premiumActions}>
+              <Text style={[styles.paymentTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
+                Choose Payment Method
+              </Text>
+              
+              {Platform.OS === 'ios' && (
+                <TouchableOpacity 
+                  style={[styles.applePayButton, { backgroundColor: '#000' }]}
+                  onPress={handleApplePayPurchase}
+                  disabled={isProcessingPayment}
+                >
+                  <Text style={[styles.applePayButtonText, { fontFamily: colors.fonts?.semiBold }]}>
+                    {isProcessingPayment ? 'Processing...' : ' Pay'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+              
+              <TouchableOpacity 
+                style={[styles.creditCardButton, { backgroundColor: colors.primary }]}
+                onPress={handleCreditCardPurchase}
+                disabled={isProcessingPayment}
+              >
+                <CreditCard size={20} color="white" />
+                <Text style={[styles.creditCardButtonText, { fontFamily: colors.fonts?.semiBold }]}>
+                  Pay with Card
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.cancelPremiumButton}
+                onPress={handleClosePremiumModal}
+                disabled={isProcessingPayment}
+              >
+                <Text style={[styles.cancelPremiumButtonText, { color: colors.text.secondary, fontFamily: colors.fonts?.medium }]}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Credit Card Form Modal */}
+      <Modal
+        visible={showCreditCardForm}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowCreditCardForm(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.creditCardModalContent, { backgroundColor: colors.background.primary }]}>
+            <View style={styles.premiumHeader}>
+              <TouchableOpacity 
+                style={styles.backButton}
+                onPress={handleBackToPaymentOptions}
+              >
+                <Text style={[styles.backButtonText, { color: colors.primary, fontFamily: colors.fonts?.medium }]}>
+                  ← Back
+                </Text>
+              </TouchableOpacity>
+              <View style={styles.premiumTitleContainer}>
+                <CreditCard size={24} color={colors.primary} />
+                <Text style={[styles.premiumTitle, { color: colors.text.primary, fontFamily: colors.fonts?.bold }]}>
+                  Payment Details
+                </Text>
+              </View>
+              <TouchableOpacity 
+                style={styles.closeButton}
+                onPress={handleClosePremiumModal}
+              >
+                <X size={24} color={colors.text.secondary} />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.creditCardForm} showsVerticalScrollIndicator={false}>
+              <View style={styles.formSection}>
+                <Text style={[styles.sectionTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
+                  Card Information
+                </Text>
+                
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, { color: colors.text.secondary }]}>Card Number</Text>
+                  <View style={[styles.inputContainer, { borderColor: cardFormErrors.cardNumber ? colors.danger : colors.border }]}>
+                    <Text style={[styles.inputValue, { color: colors.text.primary }]}>
+                      {cardForm.cardNumber || 'Enter 16-digit card number'}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.editButton, { backgroundColor: colors.primary }]}
+                    onPress={() => {
+                      Alert.prompt(
+                        'Card Number',
+                        'Enter your 16-digit card number',
+                        (text) => {
+                          if (text) {
+                            setCardForm(prev => ({ ...prev, cardNumber: formatCardNumber(text) }));
+                          }
+                        },
+                        'plain-text',
+                        cardForm.cardNumber.replace(/\s/g, ''),
+                        'numeric'
+                      );
+                    }}
+                  >
+                    <Text style={styles.editButtonText}>Edit</Text>
+                  </TouchableOpacity>
+                  {cardFormErrors.cardNumber && (
+                    <Text style={[styles.errorText, { color: colors.danger }]}>{cardFormErrors.cardNumber}</Text>
+                  )}
+                </View>
+                
+                <View style={styles.formRow}>
+                  <View style={[styles.inputGroup, styles.halfWidth]}>
+                    <Text style={[styles.inputLabel, { color: colors.text.secondary }]}>Expiry Date</Text>
+                    <View style={[styles.inputContainer, { borderColor: cardFormErrors.expiryDate ? colors.danger : colors.border }]}>
+                      <Text style={[styles.inputValue, { color: colors.text.primary }]}>
+                        {cardForm.expiryDate || 'MM/YY'}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      style={[styles.editButton, { backgroundColor: colors.primary }]}
+                      onPress={() => {
+                        Alert.prompt(
+                          'Expiry Date',
+                          'Enter expiry date (MM/YY)',
+                          (text) => {
+                            if (text) {
+                              setCardForm(prev => ({ ...prev, expiryDate: formatExpiryDate(text) }));
+                            }
+                          },
+                          'plain-text',
+                          cardForm.expiryDate,
+                          'numeric'
+                        );
+                      }}
+                    >
+                      <Text style={styles.editButtonText}>Edit</Text>
+                    </TouchableOpacity>
+                    {cardFormErrors.expiryDate && (
+                      <Text style={[styles.errorText, { color: colors.danger }]}>{cardFormErrors.expiryDate}</Text>
+                    )}
+                  </View>
+                  
+                  <View style={[styles.inputGroup, styles.halfWidth]}>
+                    <Text style={[styles.inputLabel, { color: colors.text.secondary }]}>CVV</Text>
+                    <View style={[styles.inputContainer, { borderColor: cardFormErrors.cvv ? colors.danger : colors.border }]}>
+                      <Text style={[styles.inputValue, { color: colors.text.primary }]}>
+                        {cardForm.cvv ? '•'.repeat(cardForm.cvv.length) : 'CVV'}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      style={[styles.editButton, { backgroundColor: colors.primary }]}
+                      onPress={() => {
+                        Alert.prompt(
+                          'CVV',
+                          'Enter 3 or 4 digit security code',
+                          (text) => {
+                            if (text) {
+                              setCardForm(prev => ({ ...prev, cvv: text.replace(/\D/g, '').substring(0, 4) }));
+                            }
+                          },
+                          'plain-text',
+                          '',
+                          'numeric'
+                        );
+                      }}
+                    >
+                      <Text style={styles.editButtonText}>Edit</Text>
+                    </TouchableOpacity>
+                    {cardFormErrors.cvv && (
+                      <Text style={[styles.errorText, { color: colors.danger }]}>{cardFormErrors.cvv}</Text>
+                    )}
+                  </View>
+                </View>
+                
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, { color: colors.text.secondary }]}>Cardholder Name</Text>
+                  <View style={[styles.inputContainer, { borderColor: cardFormErrors.cardholderName ? colors.danger : colors.border }]}>
+                    <Text style={[styles.inputValue, { color: colors.text.primary }]}>
+                      {cardForm.cardholderName || 'Full name as on card'}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.editButton, { backgroundColor: colors.primary }]}
+                    onPress={() => {
+                      Alert.prompt(
+                        'Cardholder Name',
+                        'Enter full name as it appears on card',
+                        (text) => {
+                          if (text) {
+                            setCardForm(prev => ({ ...prev, cardholderName: text }));
+                          }
+                        },
+                        'plain-text',
+                        cardForm.cardholderName
+                      );
+                    }}
+                  >
+                    <Text style={styles.editButtonText}>Edit</Text>
+                  </TouchableOpacity>
+                  {cardFormErrors.cardholderName && (
+                    <Text style={[styles.errorText, { color: colors.danger }]}>{cardFormErrors.cardholderName}</Text>
+                  )}
+                </View>
+              </View>
+              
+              <View style={styles.formSection}>
+                <Text style={[styles.sectionTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
+                  Billing Address
+                </Text>
+                
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, { color: colors.text.secondary }]}>Street Address</Text>
+                  <View style={[styles.inputContainer, { borderColor: cardFormErrors.street ? colors.danger : colors.border }]}>
+                    <Text style={[styles.inputValue, { color: colors.text.primary }]}>
+                      {cardForm.billingAddress.street || 'Enter street address'}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.editButton, { backgroundColor: colors.primary }]}
+                    onPress={() => {
+                      Alert.prompt(
+                        'Street Address',
+                        'Enter your street address',
+                        (text) => {
+                          if (text) {
+                            setCardForm(prev => ({ 
+                              ...prev, 
+                              billingAddress: { ...prev.billingAddress, street: text }
+                            }));
+                          }
+                        },
+                        'plain-text',
+                        cardForm.billingAddress.street
+                      );
+                    }}
+                  >
+                    <Text style={styles.editButtonText}>Edit</Text>
+                  </TouchableOpacity>
+                  {cardFormErrors.street && (
+                    <Text style={[styles.errorText, { color: colors.danger }]}>{cardFormErrors.street}</Text>
+                  )}
+                </View>
+                
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, { color: colors.text.secondary }]}>City</Text>
+                  <View style={[styles.inputContainer, { borderColor: cardFormErrors.city ? colors.danger : colors.border }]}>
+                    <Text style={[styles.inputValue, { color: colors.text.primary }]}>
+                      {cardForm.billingAddress.city || 'Enter city'}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.editButton, { backgroundColor: colors.primary }]}
+                    onPress={() => {
+                      Alert.prompt(
+                        'City',
+                        'Enter your city',
+                        (text) => {
+                          if (text) {
+                            setCardForm(prev => ({ 
+                              ...prev, 
+                              billingAddress: { ...prev.billingAddress, city: text }
+                            }));
+                          }
+                        },
+                        'plain-text',
+                        cardForm.billingAddress.city
+                      );
+                    }}
+                  >
+                    <Text style={styles.editButtonText}>Edit</Text>
+                  </TouchableOpacity>
+                  {cardFormErrors.city && (
+                    <Text style={[styles.errorText, { color: colors.danger }]}>{cardFormErrors.city}</Text>
+                  )}
+                </View>
+                
+                <View style={styles.formRow}>
+                  <View style={[styles.inputGroup, styles.halfWidth]}>
+                    <Text style={[styles.inputLabel, { color: colors.text.secondary }]}>State</Text>
+                    <View style={[styles.inputContainer, { borderColor: cardFormErrors.state ? colors.danger : colors.border }]}>
+                      <Text style={[styles.inputValue, { color: colors.text.primary }]}>
+                        {cardForm.billingAddress.state || 'State'}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      style={[styles.editButton, { backgroundColor: colors.primary }]}
+                      onPress={() => {
+                        Alert.prompt(
+                          'State',
+                          'Enter state (e.g., CA, NY)',
+                          (text) => {
+                            if (text) {
+                              setCardForm(prev => ({ 
+                                ...prev, 
+                                billingAddress: { ...prev.billingAddress, state: text.toUpperCase() }
+                              }));
+                            }
+                          },
+                          'plain-text',
+                          cardForm.billingAddress.state
+                        );
+                      }}
+                    >
+                      <Text style={styles.editButtonText}>Edit</Text>
+                    </TouchableOpacity>
+                    {cardFormErrors.state && (
+                      <Text style={[styles.errorText, { color: colors.danger }]}>{cardFormErrors.state}</Text>
+                    )}
+                  </View>
+                  
+                  <View style={[styles.inputGroup, styles.halfWidth]}>
+                    <Text style={[styles.inputLabel, { color: colors.text.secondary }]}>ZIP Code</Text>
+                    <View style={[styles.inputContainer, { borderColor: cardFormErrors.zipCode ? colors.danger : colors.border }]}>
+                      <Text style={[styles.inputValue, { color: colors.text.primary }]}>
+                        {cardForm.billingAddress.zipCode || 'ZIP'}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      style={[styles.editButton, { backgroundColor: colors.primary }]}
+                      onPress={() => {
+                        Alert.prompt(
+                          'ZIP Code',
+                          'Enter ZIP code',
+                          (text) => {
+                            if (text) {
+                              setCardForm(prev => ({ 
+                                ...prev, 
+                                billingAddress: { ...prev.billingAddress, zipCode: text }
+                              }));
+                            }
+                          },
+                          'plain-text',
+                          cardForm.billingAddress.zipCode,
+                          'numeric'
+                        );
+                      }}
+                    >
+                      <Text style={styles.editButtonText}>Edit</Text>
+                    </TouchableOpacity>
+                    {cardFormErrors.zipCode && (
+                      <Text style={[styles.errorText, { color: colors.danger }]}>{cardFormErrors.zipCode}</Text>
+                    )}
+                  </View>
+                </View>
+                
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, { color: colors.text.secondary }]}>Country</Text>
+                  <View style={[styles.inputContainer, { borderColor: colors.border }]}>
+                    <Text style={[styles.inputValue, { color: colors.text.primary }]}>
+                      {cardForm.billingAddress.country}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.editButton, { backgroundColor: colors.primary }]}
+                    onPress={() => {
+                      Alert.prompt(
+                        'Country',
+                        'Enter country',
+                        (text) => {
+                          if (text) {
+                            setCardForm(prev => ({ 
+                              ...prev, 
+                              billingAddress: { ...prev.billingAddress, country: text }
+                            }));
+                          }
+                        },
+                        'plain-text',
+                        cardForm.billingAddress.country
+                      );
+                    }}
+                  >
+                    <Text style={styles.editButtonText}>Edit</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+              
+              <View style={styles.paymentSummary}>
+                <Text style={[styles.summaryTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
+                  Payment Summary
+                </Text>
+                <View style={styles.summaryRow}>
+                  <Text style={[styles.summaryLabel, { color: colors.text.secondary, fontFamily: colors.fonts?.regular }]}>
+                    Premium Plan (Monthly)
+                  </Text>
+                  <Text style={[styles.summaryAmount, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
+                    $3.99
+                  </Text>
+                </View>
+                <View style={[styles.summaryRow, styles.totalRow]}>
+                  <Text style={[styles.totalLabel, { color: colors.text.primary, fontFamily: colors.fonts?.bold }]}>
+                    Total
+                  </Text>
+                  <Text style={[styles.totalAmount, { color: colors.primary, fontFamily: colors.fonts?.bold }]}>
+                    $3.99
+                  </Text>
+                </View>
+              </View>
+            </ScrollView>
+            
+            <View style={styles.creditCardActions}>
+              <TouchableOpacity 
+                style={[styles.processPaymentButton, { backgroundColor: colors.primary }]}
+                onPress={handleProcessCreditCardPayment}
+                disabled={isProcessingPayment}
+              >
+                <Text style={[styles.processPaymentButtonText, { fontFamily: colors.fonts?.semiBold }]}>
+                  {isProcessingPayment ? 'Processing Payment...' : 'Complete Payment'}
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.cancelPremiumButton}
+                onPress={handleClosePremiumModal}
+                disabled={isProcessingPayment}
+              >
+                <Text style={[styles.cancelPremiumButtonText, { color: colors.text.secondary, fontFamily: colors.fonts?.medium }]}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 32,
+  },
+  header: {
+    marginBottom: 24,
+    marginTop: 8,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  premiumButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  streakSection: {
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  streakHeader: {
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  streakContent: {
+    alignItems: 'center',
+  },
+  streakDescription: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 12,
+    lineHeight: 20,
+  },
+  // Monthly Recap Section
+  monthlyRecapSection: {
+    borderRadius: 16,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+    overflow: 'hidden',
+  },
+  monthlyRecapHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+  },
+  monthlyRecapTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  premiumFeatureTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 215, 0, 0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginLeft: 8,
+  },
+  premiumFeatureText: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+  premiumFeatureTeaser: {
+    padding: 20,
+    paddingTop: 0,
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  upgradeButton: {
+    alignSelf: 'center',
+    marginTop: 12,
+    marginBottom: 12,
+  },
+  monthlyRecapContent: {
+    padding: 20,
+    paddingTop: 0,
+  },
+  recapCategory: {
+    marginBottom: 24,
+  },
+  recapCategoryTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  recapStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  recapStatItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  recapStatValue: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  recapStatLabel: {
+    fontSize: 12,
+  },
+  recapProgressContainer: {
+    alignItems: 'center',
+  },
+  recapProgressBackground: {
+    height: 8,
+    width: '100%',
+    borderRadius: 4,
+    marginBottom: 8,
+    overflow: 'hidden',
+  },
+  recapProgressFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  recapProgressText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  viewDetailedRecapButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderRadius: 8,
+    marginTop: 8,
+    gap: 8,
+  },
+  viewDetailedRecapText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  tasksSection: {
+    marginBottom: 24,
+  },
+  projectTasksSection: {
+    marginBottom: 24,
+  },
+  tasksSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  tasksTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  generalTasksGroup: {
+    borderRadius: 12,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  generalTasksHeader: {
+    padding: 16,
+    paddingBottom: 8,
+  },
+  generalTasksTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  generalTasksList: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  projectGroup: {
+    borderRadius: 12,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  projectHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+  },
+  projectHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  projectColorDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 8,
+  },
+  projectName: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginRight: 8,
+  },
+  taskCount: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  projectTasks: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  premiumProjectsEmptyState: {
+    borderRadius: 12,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  premiumProjectsIcon: {
+    marginBottom: 16,
+  },
+  premiumProjectsTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  premiumProjectsDescription: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  upgradeProjectsButton: {
+    minWidth: 200,
+  },
+  goalsSection: {
+    flex: 1,
+  },
+  goalsSectionHeader: {
+    marginBottom: 16,
+  },
+  goalsTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  goalCount: {
+    fontSize: 14,
+    marginLeft: 8,
+  },
+  premiumHint: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginLeft: 8,
+  },
+  goalsActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginRight: 8,
+  },
+  filterText: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginLeft: 4,
+  },
+  addButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    borderRadius: 12,
+  },
+  emptyText: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  addGoalButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  addGoalButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    width: '100%',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  goalTypeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderWidth: 1,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  goalTypeInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  goalTypeTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  goalTypeDescription: {
+    fontSize: 14,
+  },
+  cancelButton: {
+    alignItems: 'center',
+    padding: 16,
+    borderWidth: 1,
+    borderRadius: 12,
+    marginTop: 8,
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  premiumModalContent: {
+    width: '100%',
+    maxHeight: '80%',
+    borderRadius: 20,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  creditCardModalContent: {
+    width: '100%',
+    maxHeight: '90%',
+    borderRadius: 20,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  premiumHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  premiumTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  premiumTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginLeft: 8,
+  },
+  closeButton: {
+    padding: 4,
+  },
+  backButton: {
+    padding: 4,
+  },
+  backButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  premiumPricing: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  premiumPrice: {
+    fontSize: 48,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  premiumPeriod: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  premiumFeatures: {
+    marginBottom: 32,
+  },
+  featuresTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  featureText: {
+    fontSize: 15,
+    lineHeight: 22,
+    marginLeft: 12,
+    flex: 1,
+  },
+  premiumActions: {
+    gap: 12,
+  },
+  upgradeToPremiumButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  upgradeToPremiumButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  paymentTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  applePayButton: {
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  applePayButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  creditCardButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  creditCardButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  cancelPremiumButton: {
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  cancelPremiumButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  creditCardForm: {
+    flex: 1,
+    marginBottom: 20,
+  },
+  formSection: {
+    marginBottom: 24,
+  },
+  formRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  halfWidth: {
+    flex: 1,
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  inputContainer: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    minHeight: 48,
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  inputValue: {
+    fontSize: 16,
+  },
+  editButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+  },
+  editButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  errorText: {
+    fontSize: 12,
+    marginTop: 4,
+  },
+  paymentSummary: {
+    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  summaryTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  summaryLabel: {
+    fontSize: 14,
+  },
+  summaryAmount: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  totalRow: {
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 122, 255, 0.2)',
+    paddingTop: 8,
+    marginTop: 8,
+    marginBottom: 0,
+  },
+  totalLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  totalAmount: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  creditCardActions: {
+    gap: 12,
+  },
+  processPaymentButton: {
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  processPaymentButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+});
