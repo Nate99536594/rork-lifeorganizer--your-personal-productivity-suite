@@ -1136,20 +1136,22 @@ export default function HomeScreen() {
               </Text>
             </View>
             
-            <View style={styles.premiumFeatures}>
-              <Text style={[styles.featuresTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
-                Premium Features
-              </Text>
-              
-              {premiumFeatures.map((feature, index) => (
-                <View key={index} style={styles.featureItem}>
-                  <Check size={20} color={colors.success} />
-                  <Text style={[styles.featureText, { color: colors.text.secondary, fontFamily: colors.fonts?.regular }]}>
-                    {feature}
-                  </Text>
-                </View>
-              ))}
-            </View>
+            <ScrollView style={styles.premiumFeaturesContainer} showsVerticalScrollIndicator={false}>
+              <View style={styles.premiumFeatures}>
+                <Text style={[styles.featuresTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
+                  Premium Features
+                </Text>
+                
+                {premiumFeatures.map((feature, index) => (
+                  <View key={index} style={styles.featureItem}>
+                    <Check size={20} color={colors.success} />
+                    <Text style={[styles.featureText, { color: colors.text.secondary, fontFamily: colors.fonts?.regular }]}>
+                      {feature}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </ScrollView>
             
             <View style={styles.premiumActions}>
               <TouchableOpacity 
@@ -2051,7 +2053,7 @@ const styles = StyleSheet.create({
   },
   premiumModalContent: {
     width: '100%',
-    maxHeight: '80%',
+    maxHeight: '85%',
     borderRadius: 20,
     padding: 24,
     shadowColor: '#000',
@@ -2098,7 +2100,7 @@ const styles = StyleSheet.create({
   },
   premiumPricing: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 24,
   },
   premiumPrice: {
     fontSize: 48,
@@ -2109,8 +2111,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
+  premiumFeaturesContainer: {
+    flex: 1,
+    marginBottom: 24,
+  },
   premiumFeatures: {
-    marginBottom: 32,
+    paddingBottom: 16,
   },
   featuresTitle: {
     fontSize: 18,

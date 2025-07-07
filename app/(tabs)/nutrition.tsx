@@ -638,32 +638,34 @@ export default function HealthScreen() {
             AI Workout Assistant is a premium feature that provides personalized workout plans based on your goals, equipment, and preferences.
           </Text>
           
-          <View style={styles.premiumFeaturesList}>
-            <View style={styles.premiumFeatureItem}>
-              <Check size={20} color={colors.success} />
-              <Text style={[styles.premiumFeatureText, { color: colors.text.secondary }]}>
-                Personalized workout plans for your specific goals
-              </Text>
+          <ScrollView style={styles.premiumFeaturesContainer} showsVerticalScrollIndicator={false}>
+            <View style={styles.premiumFeaturesList}>
+              <View style={styles.premiumFeatureItem}>
+                <Check size={20} color={colors.success} />
+                <Text style={[styles.premiumFeatureText, { color: colors.text.secondary }]}>
+                  Personalized workout plans for your specific goals
+                </Text>
+              </View>
+              <View style={styles.premiumFeatureItem}>
+                <Check size={20} color={colors.success} />
+                <Text style={[styles.premiumFeatureText, { color: colors.text.secondary }]}>
+                  Customized exercises based on available equipment
+                </Text>
+              </View>
+              <View style={styles.premiumFeatureItem}>
+                <Check size={20} color={colors.success} />
+                <Text style={[styles.premiumFeatureText, { color: colors.text.secondary }]}>
+                  Detailed instructions for proper form and technique
+                </Text>
+              </View>
+              <View style={styles.premiumFeatureItem}>
+                <Check size={20} color={colors.success} />
+                <Text style={[styles.premiumFeatureText, { color: colors.text.secondary }]}>
+                  Save and reuse your favorite workout plans
+                </Text>
+              </View>
             </View>
-            <View style={styles.premiumFeatureItem}>
-              <Check size={20} color={colors.success} />
-              <Text style={[styles.premiumFeatureText, { color: colors.text.secondary }]}>
-                Customized exercises based on available equipment
-              </Text>
-            </View>
-            <View style={styles.premiumFeatureItem}>
-              <Check size={20} color={colors.success} />
-              <Text style={[styles.premiumFeatureText, { color: colors.text.secondary }]}>
-                Detailed instructions for proper form and technique
-              </Text>
-            </View>
-            <View style={styles.premiumFeatureItem}>
-              <Check size={20} color={colors.success} />
-              <Text style={[styles.premiumFeatureText, { color: colors.text.secondary }]}>
-                Save and reuse your favorite workout plans
-              </Text>
-            </View>
-          </View>
+          </ScrollView>
           
           <View style={styles.premiumPricing}>
             <Text style={[styles.premiumPrice, { color: colors.warning }]}>
@@ -1557,7 +1559,7 @@ const styles = StyleSheet.create({
   // Premium modal styles
   premiumModalContent: {
     width: '90%',
-    maxHeight: '80%',
+    maxHeight: '85%',
     borderRadius: 20,
     padding: 24,
     shadowColor: '#000',
@@ -1590,9 +1592,13 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     textAlign: 'center',
   },
+  premiumFeaturesContainer: {
+    flex: 1,
+    marginBottom: 24,
+  },
   premiumFeaturesList: {
     width: '100%',
-    marginBottom: 24,
+    paddingBottom: 16,
   },
   premiumFeatureItem: {
     flexDirection: 'row',

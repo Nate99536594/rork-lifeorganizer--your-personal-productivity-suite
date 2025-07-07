@@ -660,20 +660,22 @@ export default function AddTaskScreen() {
               </Text>
             </View>
             
-            <View style={styles.premiumFeatures}>
-              <Text style={[styles.featuresTitle, { color: colors.text.primary }]}>
-                Premium Features
-              </Text>
-              
-              {premiumFeatures.map((feature, index) => (
-                <View key={index} style={styles.featureItem}>
-                  <Check size={20} color={colors.success} />
-                  <Text style={[styles.featureText, { color: colors.text.secondary }]}>
-                    {feature}
-                  </Text>
-                </View>
-              ))}
-            </View>
+            <ScrollView style={styles.premiumFeaturesContainer} showsVerticalScrollIndicator={false}>
+              <View style={styles.premiumFeatures}>
+                <Text style={[styles.featuresTitle, { color: colors.text.primary }]}>
+                  Premium Features
+                </Text>
+                
+                {premiumFeatures.map((feature, index) => (
+                  <View key={index} style={styles.featureItem}>
+                    <Check size={20} color={colors.success} />
+                    <Text style={[styles.featureText, { color: colors.text.secondary }]}>
+                      {feature}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </ScrollView>
             
             <View style={styles.premiumActions}>
               <TouchableOpacity 
@@ -1002,7 +1004,7 @@ const styles = StyleSheet.create({
   },
   premiumModalContent: {
     width: '100%',
-    maxHeight: '80%',
+    maxHeight: '85%',
     borderRadius: 20,
     padding: 24,
     shadowColor: '#000',
@@ -1048,8 +1050,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
-  premiumFeatures: {
+  premiumFeaturesContainer: {
+    flex: 1,
     marginBottom: 24,
+  },
+  premiumFeatures: {
+    paddingBottom: 16,
   },
   featuresTitle: {
     fontSize: 18,
