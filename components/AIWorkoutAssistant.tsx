@@ -424,7 +424,8 @@ export const AIWorkoutAssistant: React.FC<AIWorkoutAssistantProps> = ({
 
       const dayPlansText = selectedDayPlans.map(day => 
         `- ${day.dayName}: ${day.isWorkoutDay ? `${day.workoutType} - ${day.workoutDescription}` : 'Rest Day'}`
-      ).join('\n');
+      ).join('
+');
 
       const prompt = `You are a professional fitness trainer. Create detailed workout plans for the following days based on the user's training goal, workout specifics, and their planned workout types.
 
@@ -1427,7 +1428,7 @@ Make the workouts appropriate for the ${effectiveSpecs.experienceLevel} level an
         <View style={styles.stepHeader}>
           <View style={styles.headerWithBadge}>
             <Bookmark size={24} color={colors.primary} />
-            <View style={[styles.premiumHeaderBadge, { backgroundColor: colors.warning }]}>
+            <View style={[styles.premiumHeaderBadge, { backgroundColor: colors.primary }]}>
               <Crown size={14} color="white" />
             </View>
           </View>
@@ -1628,7 +1629,7 @@ Make the workouts appropriate for the ${effectiveSpecs.experienceLevel} level an
   const renderPremiumRequired = () => (
     <View style={styles.premiumRequiredContainer}>
       <View style={styles.premiumIconContainer}>
-        <Crown size={48} color={colors.warning} />
+        <Crown size={48} color={colors.primary} />
       </View>
       <Text style={[styles.premiumRequiredTitle, { color: colors.text.primary }]}>
         Premium Feature
@@ -1831,7 +1832,7 @@ Make the workouts appropriate for the ${effectiveSpecs.experienceLevel} level an
         <View style={[styles.premiumModalContent, { backgroundColor: colors.background.primary }]}>
           <View style={styles.premiumHeader}>
             <View style={styles.premiumTitleContainer}>
-              <Crown size={24} color={colors.warning} />
+              <Crown size={24} color={colors.primary} />
               <Text style={[styles.premiumTitle, { color: colors.text.primary }]}>
                 Premium Feature
               </Text>
@@ -1876,7 +1877,7 @@ Make the workouts appropriate for the ${effectiveSpecs.experienceLevel} level an
           </View>
           
           <View style={styles.premiumPricing}>
-            <Text style={[styles.premiumPrice, { color: colors.warning }]}>
+            <Text style={[styles.premiumPrice, { color: colors.primary }]}>
               $3.99
             </Text>
             <Text style={[styles.premiumPeriod, { color: colors.text.secondary }]}>
@@ -1944,7 +1945,7 @@ Make the workouts appropriate for the ${effectiveSpecs.experienceLevel} level an
               <Text style={[styles.modalTitle, { color: colors.text.primary }]}>
                 AI Workout Assistant
               </Text>
-              <View style={[styles.premiumBadge, { backgroundColor: colors.warning }]}>
+              <View style={[styles.premiumBadge, { backgroundColor: colors.primary }]}>
                 <Crown size={14} color="white" />
               </View>
             </View>
@@ -2622,7 +2623,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: 'rgba(255, 215, 0, 0.15)',
+    backgroundColor: 'rgba(0, 122, 255, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,

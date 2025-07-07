@@ -621,7 +621,7 @@ export default function HealthScreen() {
         <View style={[styles.premiumModalContent, { backgroundColor: colors.background.primary }]}>
           <View style={styles.premiumHeader}>
             <View style={styles.premiumTitleContainer}>
-              <Crown size={24} color={colors.warning} />
+              <Crown size={24} color={colors.primary} />
               <Text style={[styles.premiumTitle, { color: colors.text.primary }]}>
                 Premium Feature
               </Text>
@@ -668,7 +668,7 @@ export default function HealthScreen() {
           </ScrollView>
           
           <View style={styles.premiumPricing}>
-            <Text style={[styles.premiumPrice, { color: colors.warning }]}>
+            <Text style={[styles.premiumPrice, { color: colors.primary }]}>
               $3.99
             </Text>
             <Text style={[styles.premiumPeriod, { color: colors.text.secondary }]}>
