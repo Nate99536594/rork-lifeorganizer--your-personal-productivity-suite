@@ -10,10 +10,11 @@ import {
   Platform
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Target, ArrowRight, Filter, ChevronDown, ChevronRight, Folder, Crown, X, Check, CreditCard, BarChart, Calendar } from 'lucide-react-native';
+import { Target, ArrowRight, Filter, ChevronDown, ChevronRight, Folder, Crown, X, Check, CreditCard, BarChart, Calendar, Plus } from 'lucide-react-native';
 import { useColors } from '@/hooks/useColors';
 import { GoalItem } from '@/components/GoalItem';
 import { TaskItem } from '@/components/TaskItem';
+import { ProjectItem } from '@/components/ProjectItem';
 import { useGoalStore } from '@/store/goalStore';
 import { useTaskStore } from '@/store/taskStore';
 import { useProjectStore } from '@/store/projectStore';
@@ -29,7 +30,7 @@ export default function HomeScreen() {
   const colors = useColors();
   const { goals, deleteGoal, getMonthlyGoalStats, getGoalLimits } = useGoalStore();
   const { tasks, toggleComplete, deleteTask, getMonthlyTaskStats, checkAndResetDaily } = useTaskStore();
-  const { projects, getMonthlyProjectStats } = useProjectStore();
+  const { projects, getMonthlyProjectStats, deleteProject, completeProject } = useProjectStore();
   const { currentStreak, checkAndUpdateStreak } = useStreakStore();
   const { user, upgradeToPremium } = useAuthStore();
   const { getMonthlyWorkoutStats } = useWorkoutSessionStore();
@@ -228,6 +229,41 @@ export default function HomeScreen() {
   const getProjectInfo = (projectId: string) => {
     const project = projects.find(p => p.id === projectId);
     return project ? { name: project.name, color: project.color } : null;
+  };
+  
+  const handleDeleteProject = (id: string) => {
+    Alert.alert(
+      'Delete Project',
+      'Are you sure you want to delete this project? All tasks within this project will also be deleted.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete', 
+          onPress: () => {
+            deleteProject(id);
+            Alert.alert('Success', 'Project deleted successfully');
+          },
+          style: 'destructive'
+        },
+      ]
+    );
+  };
+  
+  const handleCompleteProject = (id: string) => {
+    Alert.alert(
+      'Complete Project',
+      'Are you sure you want to mark this project as completed?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Complete', 
+          onPress: () => {
+            completeProject(id);
+            Alert.alert('Success', 'Project completed successfully!');
+          }
+        },
+      ]
+    );
   };
   
   const premiumFeatures = [
@@ -519,9 +555,11 @@ export default function HomeScreen() {
               <Text style={[styles.sectionTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
                 {getCurrentMonthName()} Recap
               </Text>
-              <View style={styles.premiumFeatureTag}>
-                <Crown size={16} color={colors.primary} />
-              </View>
+              {!user?.isPremium && (
+                <View style={styles.premiumFeatureTag}>
+                  <Crown size={16} color={colors.primary} />
+                </View>
+              )}
             </View>
           </TouchableOpacity>
           
@@ -756,6 +794,58 @@ export default function HomeScreen() {
 
         {/* Weekly Workout Tracker */}
         <WeeklyWorkoutTracker />
+
+        {/* Projects Section */}
+        {user?.isPremium && (
+          <View style={[styles.projectsSection, { backgroundColor: colors.background.primary }]}>
+            <View style={styles.projectsSectionHeader}>
+              <View style={styles.projectsTitleContainer}>
+                <Folder size={20} color={colors.secondary} />
+                <Text style={[styles.sectionTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
+                  Projects
+                </Text>
+              </View>
+            </View>
+            
+            {projects.length === 0 ? (
+              <View style={styles.noProjectsContainer}>
+                <Text style={[styles.noProjectsText, { color: colors.text.secondary, fontFamily: colors.fonts?.regular }]}>
+                  No projects yet
+                </Text>
+                <Button
+                  title="Create Project"
+                  onPress={() => router.push('/add-task?createProject=true')}
+                  icon={<Plus size={18} color="white" />}
+                  style={styles.createProjectButton}
+                  size="medium"
+                />
+              </View>
+            ) : (
+              <View style={styles.projectsList}>
+                {projects.map(project => (
+                  <ProjectItem
+                    key={project.id}
+                    project={project}
+                    onPress={() => router.push(`/project/${project.id}`)}
+                    onEdit={() => router.push(`/project/${project.id}?edit=true`)}
+                    onDelete={() => handleDeleteProject(project.id)}
+                    onComplete={() => handleCompleteProject(project.id)}
+                  />
+                ))}
+                
+                <TouchableOpacity 
+                  style={[styles.addProjectButton, { borderColor: colors.border }]}
+                  onPress={() => router.push('/add-task?createProject=true')}
+                >
+                  <Plus size={20} color={colors.primary} />
+                  <Text style={[styles.addProjectText, { color: colors.primary, fontFamily: colors.fonts?.medium }]}>
+                    Add New Project
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        )}
         
         {/* General Tasks Section */}
         {generalTasks.length > 0 && (
@@ -811,7 +901,7 @@ export default function HomeScreen() {
             <View style={styles.tasksTitleContainer}>
               <Folder size={20} color={colors.secondary} />
               <Text style={[styles.sectionTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
-                Projects
+                Project Tasks
               </Text>
               {!user?.isPremium && (
                 <View style={styles.premiumFeatureTag}>
@@ -1812,6 +1902,56 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
+  // Projects Section
+  projectsSection: {
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  projectsSectionHeader: {
+    marginBottom: 16,
+  },
+  projectsTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  noProjectsContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  noProjectsText: {
+    fontSize: 16,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  createProjectButton: {
+    minWidth: 150,
+  },
+  projectsList: {
+    gap: 12,
+  },
+  addProjectButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderWidth: 2,
+    borderRadius: 12,
+    borderStyle: 'dashed',
+    marginTop: 8,
+    gap: 8,
+  },
+  addProjectText: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
   tasksSection: {
     marginBottom: 24,
   },
@@ -1827,6 +1967,7 @@ const styles = StyleSheet.create({
   tasksTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
   },
   generalTasksGroup: {
     borderRadius: 12,
@@ -1925,6 +2066,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+    gap: 8,
   },
   goalCount: {
     fontSize: 14,
