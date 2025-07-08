@@ -19,6 +19,7 @@ interface AuthState {
   switchUsernameType: (type: 'real' | 'anonymous') => void;
   upgradeToPremium: () => Promise<void>;
   logout: () => void;
+  deleteAccount: () => Promise<void>;
   generateUniqueUsername: (firstName: string, lastName: string) => Promise<{ username: string; error?: string }>;
   generateUniqueAnonymousUsername: () => string;
   validateAndCheckUsername: (username: string) => Promise<{ isValid: boolean; error?: string }>;
@@ -405,6 +406,31 @@ export const useAuthStore = create<AuthState>()(
       
       logout: () => {
         set({ user: null, isAuthenticated: false });
+      },
+
+      deleteAccount: async () => {
+        try {
+          // Simulate API call to delete account
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Clear all data from AsyncStorage
+          await AsyncStorage.clear();
+          
+          // Reset auth state
+          set({ 
+            user: null, 
+            isAuthenticated: false,
+            existingUsernames: ['johndoe', 'janesmith', 'testuser'],
+            existingAnonymousUsernames: ['user123', 'player456', 'guest789']
+          });
+          
+          // Clear all other stores by calling their reset methods
+          // This will be handled by the settings component
+          
+        } catch (error) {
+          console.error('Delete account error:', error);
+          throw error;
+        }
       }
     }),
     {

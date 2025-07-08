@@ -41,7 +41,8 @@ import {
   Utensils,
   Dumbbell,
   Target,
-  Folder
+  Folder,
+  Trash2
 } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
@@ -53,16 +54,22 @@ import { useWorkoutSessionStore } from '@/store/workoutSessionStore';
 import { useGoalStore } from '@/store/goalStore';
 import { useProjectStore } from '@/store/projectStore';
 import { useStreakStore } from '@/store/streakStore';
+import { useFriendStore } from '@/store/friendStore';
+import { useChallengeStore } from '@/store/challengeStore';
+import { useAchievementStore } from '@/store/achievementStore';
+import { useActivityFeedStore } from '@/store/activityFeedStore';
+import { useCharacterStore } from '@/store/characterStore';
+import { useWeeklyWorkoutStore } from '@/store/weeklyWorkoutStore';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { DailySession, TaskSnapshot } from '@/types';
 
-type ExpandedSection = 'theme' | 'profile' | 'password' | 'privacy' | 'archive' | 'support' | null;
+type ExpandedSection = 'theme' | 'profile' | 'password' | 'privacy' | 'archive' | 'support' | 'delete' | null;
 
 export default function SettingsScreen() {
   const router = useRouter();
   const colors = useColors();
-  const { user, updateProfile, updatePrivacySettings, switchUsernameType, logout } = useAuthStore();
+  const { user, updateProfile, updatePrivacySettings, switchUsernameType, logout, deleteAccount } = useAuthStore();
   const { themeMode, setTheme } = useThemeStore();
   const { dailySessions, addReflection, getDailyTaskLogs } = useTaskStore();
   const { getDailyNutritionLogs } = useNutritionStore();
@@ -85,6 +92,7 @@ export default function SettingsScreen() {
   );
   const [reflectionText, setReflectionText] = useState('');
   const [editingReflection, setEditingReflection] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const handleSaveProfile = () => {
     if (!firstName.trim() || !lastName.trim() || !email.trim()) {
@@ -143,6 +151,115 @@ export default function SettingsScreen() {
           onPress: () => {
             logout();
             router.replace('/');
+          },
+          style: 'destructive'
+        },
+      ]
+    );
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'Are you sure you want to delete your account? This action cannot be undone and all data within the app of your account will be erased.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete Account', 
+          onPress: async () => {
+            setIsDeleting(true);
+            try {
+              // Clear all store data
+              const taskStore = useTaskStore.getState();
+              const nutritionStore = useNutritionStore.getState();
+              const workoutStore = useWorkoutSessionStore.getState();
+              const goalStore = useGoalStore.getState();
+              const projectStore = useProjectStore.getState();
+              const streakStore = useStreakStore.getState();
+              const friendStore = useFriendStore.getState();
+              const challengeStore = useChallengeStore.getState();
+              const achievementStore = useAchievementStore.getState();
+              const activityFeedStore = useActivityFeedStore.getState();
+              const characterStore = useCharacterStore.getState();
+              const weeklyWorkoutStore = useWeeklyWorkoutStore.getState();
+              
+              // Reset all stores to initial state
+              taskStore.tasks = [];
+              taskStore.dailySessions = [];
+              taskStore.dailyTaskLogs = [];
+              taskStore.sharedTodoLists = [];
+              taskStore.todoListShares = [];
+              
+              nutritionStore.entries = [];
+              nutritionStore.previousMeals = [];
+              nutritionStore.dailyNutritionLogs = [];
+              
+              workoutStore.sessions = [];
+              workoutStore.savedAIWorkouts = [];
+              workoutStore.dailyWorkoutLogs = [];
+              
+              goalStore.goals = [];
+              goalStore.dailyGoalLogs = [];
+              
+              projectStore.projects = [];
+              projectStore.projectShares = [];
+              projectStore.sharedProjects = [];
+              projectStore.dailyProjectLogs = [];
+              
+              streakStore.currentStreak = 0;
+              streakStore.lastCompletedDate = null;
+              streakStore.longestStreak = 0;
+              streakStore.streakHistory = [];
+              
+              friendStore.friends = [];
+              friendStore.friendRequests = [];
+              friendStore.searchResults = [];
+              friendStore.contactSuggestions = [];
+              
+              challengeStore.challenges = [];
+              
+              achievementStore.unlockedAchievements = [];
+              achievementStore.progress = {};
+              
+              activityFeedStore.activities = [];
+              
+              characterStore.character = {
+                id: '1',
+                name: 'My Character',
+                level: 1,
+                experience: 0,
+                experienceToNext: 100,
+                appearance: {
+                  skinTone: '#F4C2A1',
+                  hairColor: '#8B4513',
+                  hairStyle: 'short',
+                  eyeColor: '#4A90E2',
+                  outfit: 'casual'
+                },
+                stats: {
+                  strength: 1,
+                  endurance: 1,
+                  focus: 1,
+                  creativity: 1
+                },
+                createdAt: new Date().toISOString(),
+                lastUpdated: new Date().toISOString()
+              };
+              
+              weeklyWorkoutStore.currentWeekPlan = null;
+              weeklyWorkoutStore.weeklyStreak = 0;
+              weeklyWorkoutStore.lastWeekStart = null;
+              
+              // Delete the account
+              await deleteAccount();
+              
+              Alert.alert('Account Deleted', 'Your account has been successfully deleted.');
+              router.replace('/');
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete account. Please try again.');
+            } finally {
+              setIsDeleting(false);
+            }
           },
           style: 'destructive'
         },
@@ -1023,6 +1140,28 @@ New username: ${newUsername}`,
               onPress={() => router.push('/support')}
               icon={<MessageCircle size={18} color="white" />}
               style={styles.saveButton}
+            />
+          </View>
+        )}
+
+        {/* Delete Account Section */}
+        {renderCollapsibleSection(
+          'delete',
+          'Delete Account',
+          <Trash2 size={20} color={colors.danger} />,
+          <View>
+            <Text style={[styles.sectionDescription, { color: colors.text.secondary }]}>
+              Permanently delete your account and all associated data. This action cannot be undone.
+            </Text>
+            
+            <Button
+              title={isDeleting ? "Deleting Account..." : "Delete Account"}
+              onPress={handleDeleteAccount}
+              icon={<Trash2 size={18} color={colors.danger} />}
+              style={[styles.saveButton, { borderColor: colors.danger }]}
+              textStyle={{ color: colors.danger }}
+              variant="outline"
+              disabled={isDeleting}
             />
           </View>
         )}
