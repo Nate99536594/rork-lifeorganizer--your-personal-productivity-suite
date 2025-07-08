@@ -570,17 +570,15 @@ export default function TasksScreen() {
           onPress={handleProjectsTabPress}
         >
           <View style={styles.projectsTabContent}>
-            {!user?.isPremium && (
-              <View style={styles.premiumIndicator}>
-                <Crown size={14} color={colors.primary} style={styles.crownIcon} />
-              </View>
-            )}
             <Text style={[
               styles.tabText,
               { color: activeTab === 'projects' ? colors.primary : colors.text.secondary }
             ]}>
               Projects
             </Text>
+            {!user?.isPremium && (
+              <Crown size={14} color={colors.primary} style={styles.crownIcon} />
+            )}
             {pendingProjectShares.length > 0 && (
               <View style={[styles.notificationBadge, { backgroundColor: colors.error }]}>
                 <Text style={styles.notificationBadgeText}>{pendingProjectShares.length}</Text>
@@ -1215,22 +1213,6 @@ const styles = StyleSheet.create({
     gap: 6,
     position: 'relative',
   },
-  premiumIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    position: 'absolute',
-    top: -20,
-    left: -10,
-    backgroundColor: 'rgba(255, 215, 0, 0.15)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-  },
-  premiumText: {
-    fontSize: 10,
-    fontWeight: '600',
-    marginLeft: 2,
-  },
   notificationBadge: {
     position: 'absolute',
     top: -8,
@@ -1247,7 +1229,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   crownIcon: {
-    marginRight: 2,
+    marginLeft: 4,
   },
   scrollContent: {
     padding: 16,
