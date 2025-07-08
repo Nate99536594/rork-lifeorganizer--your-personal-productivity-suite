@@ -198,37 +198,25 @@ export default function SettingsScreen() {
               
               challengeStore.challenges = [];
               
-              achievementStore.unlockedAchievements = [];
-              achievementStore.progress = {};
+              achievementStore.userAchievements = [];
+              achievementStore.achievementProgress = {};
               
               activityFeedStore.activities = [];
               
               characterStore.character = {
-                id: '1',
-                name: 'My Character',
-                level: 1,
-                experience: 0,
-                experienceToNext: 100,
-                appearance: {
-                  skinTone: '#F4C2A1',
-                  hairColor: '#8B4513',
-                  hairStyle: 'short',
-                  eyeColor: '#4A90E2',
-                  outfit: 'casual'
-                },
-                stats: {
-                  strength: 1,
-                  endurance: 1,
-                  focus: 1,
-                  creativity: 1
-                },
-                createdAt: new Date().toISOString(),
-                lastUpdated: new Date().toISOString()
+                id: 'default',
+                skinTone: 'light',
+                hairColor: 'black',
+                hairStyle: 'short',
+                eyeColor: 'brown',
+                bodyType: 'average',
+                clothingColor: 'blue',
+                accessories: [],
               };
               
-              weeklyWorkoutStore.currentWeekPlan = null;
+              weeklyWorkoutStore.currentWeeklyPlan = null;
               weeklyWorkoutStore.weeklyStreak = 0;
-              weeklyWorkoutStore.lastWeekStart = null;
+              weeklyWorkoutStore.currentWeekStart = '';
               
               // Delete the account
               await deleteAccount();
