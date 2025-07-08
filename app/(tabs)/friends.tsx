@@ -1068,16 +1068,19 @@ export default function FriendsTab() {
               ]}
               onPress={() => setActiveTab('projects')}
             >
-              <Folder 
-                size={18} 
-                color={activeTab === 'projects' ? colors.primary : colors.text.secondary} 
-              />
-              <Text style={[
-                styles.tabText,
-                { color: activeTab === 'projects' ? colors.primary : colors.text.secondary }
-              ]}>
-                Projects
-              </Text>
+              <View style={styles.tabContent}>
+                <Folder 
+                  size={18} 
+                  color={activeTab === 'projects' ? colors.primary : colors.text.secondary} 
+                />
+                <Text style={[
+                  styles.tabText,
+                  { color: activeTab === 'projects' ? colors.primary : colors.text.secondary }
+                ]}>
+                  Projects
+                </Text>
+                <Crown size={14} color={colors.primary} style={styles.premiumIcon} />
+              </View>
               {pendingProjectShares.length > 0 && (
                 <View style={[styles.notificationBadge, { backgroundColor: colors.error }]}>
                   <Text style={styles.notificationBadgeText}>{pendingProjectShares.length}</Text>
@@ -1334,9 +1337,17 @@ const styles = StyleSheet.create({
     gap: 8,
     position: 'relative',
   },
+  tabContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   tabText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  premiumIcon: {
+    marginLeft: 4,
   },
   notificationBadge: {
     position: 'absolute',
