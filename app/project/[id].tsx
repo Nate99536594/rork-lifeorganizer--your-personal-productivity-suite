@@ -413,9 +413,6 @@ export default function ProjectDetailScreen() {
               {project.createdByPremium === true && (
                 <View style={[styles.premiumTag, { backgroundColor: colors.warning }]}>
                   <Crown size={12} color="white" />
-                  <Text style={[styles.premiumText, { color: 'white' }]}>
-                    Premium
-                  </Text>
                 </View>
               )}
             </View>

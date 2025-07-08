@@ -573,9 +573,6 @@ export default function TasksScreen() {
             {!user?.isPremium && (
               <View style={styles.premiumIndicator}>
                 <Crown size={14} color={colors.primary} style={styles.crownIcon} />
-                <Text style={[styles.premiumText, { color: colors.primary }]}>
-                  Premium
-                </Text>
               </View>
             )}
             <Text style={[

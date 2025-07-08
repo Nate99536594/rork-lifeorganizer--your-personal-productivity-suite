@@ -522,9 +522,6 @@ export default function HomeScreen() {
               </Text>
               <View style={styles.premiumFeatureTag}>
                 <Crown size={16} color={colors.primary} />
-                <Text style={[styles.premiumFeatureText, { color: colors.primary, fontFamily: colors.fonts?.medium }]}>
-                  Premium
-                </Text>
               </View>
             </View>
             {user?.isPremium ? (
@@ -830,9 +827,6 @@ export default function HomeScreen() {
             {!user?.isPremium && (
               <View style={styles.premiumFeatureTag}>
                 <Crown size={16} color={colors.primary} />
-                <Text style={[styles.premiumFeatureText, { color: colors.primary, fontFamily: colors.fonts?.medium }]}>
-                  Premium
-                </Text>
               </View>
             )}
           </TouchableOpacity>
