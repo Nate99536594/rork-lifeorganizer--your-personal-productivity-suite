@@ -523,14 +523,12 @@ export default function HomeScreen() {
                 <Crown size={16} color={colors.primary} />
               </View>
             </View>
-            {user?.isPremium ? (
+            {user?.isPremium && (
               showMonthlyRecap ? (
                 <ChevronDown size={20} color={colors.text.secondary} />
               ) : (
                 <ChevronRight size={20} color={colors.text.secondary} />
               )
-            ) : (
-              <Crown size={20} color={colors.primary} />
             )}
           </TouchableOpacity>
           
@@ -822,12 +820,12 @@ export default function HomeScreen() {
               <Text style={[styles.sectionTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
                 Projects
               </Text>
+              {!user?.isPremium && (
+                <View style={styles.premiumFeatureTag}>
+                  <Crown size={16} color={colors.primary} />
+                </View>
+              )}
             </View>
-            {!user?.isPremium && (
-              <View style={styles.premiumFeatureTag}>
-                <Crown size={16} color={colors.primary} />
-              </View>
-            )}
           </TouchableOpacity>
           
           {Object.keys(tasksByProject).length > 0 ? (
