@@ -10,7 +10,7 @@ import {
   Platform
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Target, ArrowRight, Filter, ChevronDown, ChevronRight, Folder, Crown, X, Check, CreditCard, BarChart, Calendar, Plus } from 'lucide-react-native';
+import { Target, ArrowRight, Filter, Crown, X, Check, CreditCard, BarChart, Calendar, Plus } from 'lucide-react-native';
 import { useColors } from '@/hooks/useColors';
 import { GoalItem } from '@/components/GoalItem';
 import { TaskItem } from '@/components/TaskItem';
@@ -39,7 +39,6 @@ export default function HomeScreen() {
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [showPaymentOptions, setShowPaymentOptions] = useState(false);
   const [showCreditCardForm, setShowCreditCardForm] = useState(false);
-  const [collapsedProjects, setCollapsedProjects] = useState<Set<string>>(new Set());
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [showMonthlyRecap, setShowMonthlyRecap] = useState(false);
   
@@ -200,36 +199,6 @@ export default function HomeScreen() {
   
   // Get only general tasks (tasks without projectId)
   const generalTasks = tasks.filter(task => !task.projectId);
-  
-  // Group project tasks by project
-  const tasksByProject = React.useMemo(() => {
-    const grouped: { [key: string]: typeof tasks } = {};
-    
-    // Only add tasks that have projectId
-    projects.forEach(project => {
-      const projectTasks = tasks.filter(task => task.projectId === project.id);
-      if (projectTasks.length > 0) {
-        grouped[project.id] = projectTasks;
-      }
-    });
-    
-    return grouped;
-  }, [tasks, projects]);
-  
-  const toggleProjectCollapse = (projectId: string) => {
-    const newCollapsed = new Set(collapsedProjects);
-    if (newCollapsed.has(projectId)) {
-      newCollapsed.delete(projectId);
-    } else {
-      newCollapsed.add(projectId);
-    }
-    setCollapsedProjects(newCollapsed);
-  };
-  
-  const getProjectInfo = (projectId: string) => {
-    const project = projects.find(p => p.id === projectId);
-    return project ? { name: project.name, color: project.color } : null;
-  };
   
   const handleDeleteProject = (id: string) => {
     Alert.alert(
@@ -800,7 +769,6 @@ export default function HomeScreen() {
           <View style={[styles.projectsSection, { backgroundColor: colors.background.primary }]}>
             <View style={styles.projectsSectionHeader}>
               <View style={styles.projectsTitleContainer}>
-                <Folder size={20} color={colors.secondary} />
                 <Text style={[styles.sectionTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
                   Projects
                 </Text>
@@ -852,7 +820,6 @@ export default function HomeScreen() {
           <View style={styles.tasksSection}>
             <View style={styles.tasksSectionHeader}>
               <View style={styles.tasksTitleContainer}>
-                <Folder size={20} color={colors.primary} />
                 <Text style={[styles.sectionTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
                   Today's Tasks
                 </Text>
@@ -890,107 +857,6 @@ export default function HomeScreen() {
             </View>
           </View>
         )}
-        
-        {/* Project Tasks Section */}
-        <View style={styles.projectTasksSection}>
-          <TouchableOpacity 
-            style={styles.tasksSectionHeader}
-            onPress={() => !user?.isPremium && handleShowPremiumModal()}
-            activeOpacity={user?.isPremium ? 1 : 0.7}
-          >
-            <View style={styles.tasksTitleContainer}>
-              <Folder size={20} color={colors.secondary} />
-              <Text style={[styles.sectionTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
-                Project Tasks
-              </Text>
-              {!user?.isPremium && (
-                <View style={styles.premiumFeatureTag}>
-                  <Crown size={16} color={colors.primary} />
-                </View>
-              )}
-            </View>
-          </TouchableOpacity>
-          
-          {Object.keys(tasksByProject).length > 0 ? (
-            Object.entries(tasksByProject).map(([projectId, projectTasks]) => {
-              const projectInfo = getProjectInfo(projectId);
-              if (!projectInfo) return null;
-              
-              const isCollapsed = collapsedProjects.has(projectId);
-              const incompleteTasks = projectTasks.filter(task => !task.completed);
-              const completedTasks = projectTasks.filter(task => task.completed);
-              
-              return (
-                <View key={projectId} style={[styles.projectGroup, { backgroundColor: colors.background.primary }]}>
-                  <TouchableOpacity 
-                    style={styles.projectHeader}
-                    onPress={() => toggleProjectCollapse(projectId)}
-                  >
-                    <View style={styles.projectHeaderLeft}>
-                      <View style={[styles.projectColorDot, { backgroundColor: projectInfo.color }]} />
-                      <Text style={[styles.projectName, { color: colors.text.primary }]}>
-                        {projectInfo.name}
-                      </Text>
-                      <Text style={[styles.taskCount, { color: colors.text.secondary }]}>
-                        ({projectTasks.length})
-                      </Text>
-                    </View>
-                    {isCollapsed ? (
-                      <ChevronRight size={20} color={colors.text.secondary} />
-                    ) : (
-                      <ChevronDown size={20} color={colors.text.secondary} />
-                    )}
-                  </TouchableOpacity>
-                  
-                  {!isCollapsed && (
-                    <View style={styles.projectTasks}>
-                      {/* Show incomplete tasks first */}
-                      {incompleteTasks.map(task => (
-                        <TaskItem
-                          key={task.id}
-                          task={task}
-                          onToggle={() => handleToggleComplete(task.id, task.completed)}
-                          onDelete={() => handleDeleteTask(task.id)}
-                          onPress={() => router.push(`/task/${task.id}`)}
-                        />
-                      ))}
-                      
-                      {/* Show completed tasks */}
-                      {completedTasks.map(task => (
-                        <TaskItem
-                          key={task.id}
-                          task={task}
-                          onToggle={() => handleToggleComplete(task.id, task.completed)}
-                          onDelete={() => handleDeleteTask(task.id)}
-                          onPress={() => router.push(`/task/${task.id}`)}
-                        />
-                      ))}
-                    </View>
-                  )}
-                </View>
-              );
-            })
-          ) : (
-            !user?.isPremium && (
-              <View style={[styles.premiumProjectsEmptyState, { backgroundColor: colors.background.primary }]}>
-                <Crown size={32} color={colors.primary} style={styles.premiumProjectsIcon} />
-                <Text style={[styles.premiumProjectsTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
-                  Unlock Project Mode
-                </Text>
-                <Text style={[styles.premiumProjectsDescription, { color: colors.text.secondary, fontFamily: colors.fonts?.regular }]}>
-                  Organize your tasks with advanced project management. Create up to 5 projects with 20 tasks each.
-                </Text>
-                <Button 
-                  title="Upgrade to Premium" 
-                  onPress={handleShowPremiumModal}
-                  variant="primary"
-                  size="medium"
-                  style={styles.upgradeProjectsButton}
-                />
-              </View>
-            )
-          )}
-        </View>
         
         {/* Goals Section */}
         <View style={styles.goalsSection}>
@@ -1955,9 +1821,6 @@ const styles = StyleSheet.create({
   tasksSection: {
     marginBottom: 24,
   },
-  projectTasksSection: {
-    marginBottom: 24,
-  },
   tasksSectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1989,72 +1852,6 @@ const styles = StyleSheet.create({
   generalTasksList: {
     paddingHorizontal: 16,
     paddingBottom: 16,
-  },
-  projectGroup: {
-    borderRadius: 12,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  projectHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-  },
-  projectHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  projectColorDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 8,
-  },
-  projectName: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginRight: 8,
-  },
-  taskCount: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  projectTasks: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-  },
-  premiumProjectsEmptyState: {
-    borderRadius: 12,
-    padding: 24,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  premiumProjectsIcon: {
-    marginBottom: 16,
-  },
-  premiumProjectsTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  premiumProjectsDescription: {
-    fontSize: 14,
-    textAlign: 'center',
-    marginBottom: 20,
-    lineHeight: 20,
-  },
-  upgradeProjectsButton: {
-    minWidth: 200,
   },
   goalsSection: {
     flex: 1,
