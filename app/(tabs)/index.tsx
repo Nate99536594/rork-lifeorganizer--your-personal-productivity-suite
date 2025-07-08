@@ -361,7 +361,7 @@ export default function HomeScreen() {
   };
 
   const handleCreditCardPurchase = () => {
-    setShowCreditCardForm(true);
+    // Disabled - do nothing when clicked
   };
 
   const handleProcessCreditCardPayment = async () => {
@@ -523,13 +523,6 @@ export default function HomeScreen() {
                 <Crown size={16} color={colors.primary} />
               </View>
             </View>
-            {user?.isPremium && (
-              showMonthlyRecap ? (
-                <ChevronDown size={20} color={colors.text.secondary} />
-              ) : (
-                <ChevronRight size={20} color={colors.text.secondary} />
-              )
-            )}
           </TouchableOpacity>
           
           {user?.isPremium && showMonthlyRecap && (
@@ -1227,9 +1220,15 @@ export default function HomeScreen() {
               )}
               
               <TouchableOpacity 
-                style={[styles.creditCardButton, { backgroundColor: colors.primary }]}
+                style={[
+                  styles.creditCardButton, 
+                  { 
+                    backgroundColor: colors.text.light,
+                    opacity: 0.5
+                  }
+                ]}
                 onPress={handleCreditCardPurchase}
-                disabled={isProcessingPayment}
+                disabled={true}
               >
                 <CreditCard size={20} color="white" />
                 <Text style={[styles.creditCardButtonText, { fontFamily: colors.fonts?.semiBold }]}>

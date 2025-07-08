@@ -468,7 +468,7 @@ export default function TasksScreen() {
   };
 
   const handleCreditCardPurchase = () => {
-    setShowCreditCardForm(true);
+    // Disabled - do nothing when clicked
   };
 
   const handleProcessCreditCardPayment = async () => {
@@ -959,9 +959,15 @@ export default function TasksScreen() {
               )}
               
               <TouchableOpacity 
-                style={[styles.creditCardButton, { backgroundColor: colors.primary }]}
+                style={[
+                  styles.creditCardButton, 
+                  { 
+                    backgroundColor: colors.text.light,
+                    opacity: 0.5
+                  }
+                ]}
                 onPress={handleCreditCardPurchase}
-                disabled={isProcessingPayment}
+                disabled={true}
               >
                 <CreditCard size={20} color="white" />
                 <Text style={styles.creditCardButtonText}>
