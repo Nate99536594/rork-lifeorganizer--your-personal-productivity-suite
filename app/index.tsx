@@ -68,6 +68,18 @@ export default function LoginScreen() {
             isLoading={isLoading}
           />
         </View>
+        
+        <View style={styles.footer}>
+          <Text style={[
+            styles.footerText, 
+            { 
+              color: colors.text.secondary,
+              fontFamily: colors.fonts.regular
+            }
+          ]}>
+            By continuing, you agree to our Terms of Service and Privacy Policy
+          </Text>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -100,5 +112,15 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     marginBottom: 40,
+  },
+  footer: {
+    marginTop: 'auto',
+    paddingVertical: 16,
+  },
+  footerText: {
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 16,
+    paddingHorizontal: 20,
   },
 });
