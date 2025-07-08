@@ -338,7 +338,6 @@ export default function TasksScreen() {
   const premiumFeatures = [
     'Projects - Create and manage up to 5 projects to organize your tasks',
     'AI workout assistant - Get personalized workout plans tailored to your fitness goals',
-    'Shared to-do lists - Collaborate on tasks with friends and family',
     'Up to 30 tasks - Expand beyond the standard 8 task limit',
     'Up to 12 goals - Expand beyond the standard 3 goal limit',
     'Up to 20 tasks per project - Organize your work efficiently',
