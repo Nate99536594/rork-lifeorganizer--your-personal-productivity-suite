@@ -36,6 +36,7 @@ export default function HomeScreen() {
   const { getMonthlyWorkoutStats } = useWorkoutSessionStore();
   const [filterType, setFilterType] = useState<'all' | 'short-term' | 'long-term'>('all');
   const [showAddGoalModal, setShowAddGoalModal] = useState(false);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [showPaymentOptions, setShowPaymentOptions] = useState(false);
   const [showCreditCardForm, setShowCreditCardForm] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
@@ -161,7 +162,7 @@ export default function HomeScreen() {
           `You've reached the maximum of ${goalLimits.total} goals. Upgrade to Premium for up to 12 goals!`,
           [
             { text: 'Cancel', style: 'cancel' },
-            { text: 'Upgrade to Premium', onPress: () => setShowPaymentOptions(true) }
+            { text: 'Upgrade to Premium', onPress: () => setShowPremiumModal(true) }
           ]
         );
       } else {
@@ -183,7 +184,7 @@ export default function HomeScreen() {
           `You've reached the maximum of ${goalLimits.total} goals. Upgrade to Premium for up to 12 goals!`,
           [
             { text: 'Cancel', style: 'cancel' },
-            { text: 'Upgrade to Premium', onPress: () => setShowPaymentOptions(true) }
+            { text: 'Upgrade to Premium', onPress: () => setShowPremiumModal(true) }
           ]
         );
       } else {
@@ -232,6 +233,19 @@ export default function HomeScreen() {
         },
       ]
     );
+  };
+  
+  const premiumFeatures = [
+    'Projects - Create and manage up to 5 projects to organize your tasks',
+    'AI workout assistant - Get personalized workout plans tailored to your fitness goals',
+    'Up to 30 tasks - Expand beyond the standard 8 task limit',
+    'Up to 12 goals - Expand beyond the standard 3 goal limit',
+    'Up to 20 tasks per project - Organize your work efficiently',
+    'Monthly recap - Detailed insights on completed and unfinished tasks/workouts'
+  ];
+
+  const handleUpgradeToPremium = () => {
+    setShowPaymentOptions(true);
   };
 
   const handleApplePayPurchase = async () => {
@@ -393,7 +407,19 @@ export default function HomeScreen() {
     setCardFormErrors({});
   };
 
+  const handleBackToFeatures = () => {
+    setShowPaymentOptions(false);
+    setShowCreditCardForm(false);
+  };
+
+  const handleShowPremiumModal = () => {
+    setShowPremiumModal(true);
+    setShowPaymentOptions(false);
+    setShowCreditCardForm(false);
+  };
+
   const handleClosePremiumModal = () => {
+    setShowPremiumModal(false);
     setShowPaymentOptions(false);
     setShowCreditCardForm(false);
     resetCardForm();
@@ -433,7 +459,7 @@ export default function HomeScreen() {
             {!user?.isPremium && (
               <TouchableOpacity 
                 style={[styles.premiumButton, { backgroundColor: colors.primary }]}
-                onPress={() => setShowPaymentOptions(true)}
+                onPress={handleShowPremiumModal}
               >
                 <Crown size={20} color="white" />
               </TouchableOpacity>
@@ -470,7 +496,7 @@ export default function HomeScreen() {
             style={styles.monthlyRecapHeader}
             onPress={() => {
               if (!user?.isPremium) {
-                setShowPaymentOptions(true);
+                handleShowPremiumModal();
               } else {
                 setShowMonthlyRecap(!showMonthlyRecap);
               }
@@ -709,7 +735,7 @@ export default function HomeScreen() {
               </Text>
               <Button 
                 title="Upgrade to Premium" 
-                onPress={() => setShowPaymentOptions(true)}
+                onPress={handleShowPremiumModal}
                 variant="primary"
                 size="small"
                 style={styles.upgradeButton}
@@ -724,7 +750,7 @@ export default function HomeScreen() {
             style={styles.projectsSectionHeader}
             onPress={() => {
               if (!user?.isPremium) {
-                setShowPaymentOptions(true);
+                handleShowPremiumModal();
               }
             }}
           >
@@ -788,7 +814,7 @@ export default function HomeScreen() {
               </Text>
               <Button 
                 title="Upgrade to Premium" 
-                onPress={() => setShowPaymentOptions(true)}
+                onPress={handleShowPremiumModal}
                 variant="primary"
                 size="small"
                 style={styles.upgradeButton}
@@ -901,7 +927,7 @@ export default function HomeScreen() {
                       `You've reached the maximum of ${goalLimits.total} goals. Upgrade to Premium for up to 12 goals!`,
                       [
                         { text: 'Cancel', style: 'cancel' },
-                        { text: 'Upgrade to Premium', onPress: () => setShowPaymentOptions(true) }
+                        { text: 'Upgrade to Premium', onPress: () => setShowPremiumModal(true) }
                       ]
                     );
                   } else {
@@ -940,7 +966,7 @@ export default function HomeScreen() {
                         `You've reached the maximum of ${goalLimits.total} goals. Upgrade to Premium for up to 12 goals!`,
                         [
                           { text: 'Cancel', style: 'cancel' },
-                          { text: 'Upgrade to Premium', onPress: () => setShowPaymentOptions(true) }
+                          { text: 'Upgrade to Premium', onPress: () => setShowPremiumModal(true) }
                         ]
                       );
                     } else {
@@ -1025,6 +1051,80 @@ export default function HomeScreen() {
         </View>
       </Modal>
 
+      {/* Premium Features Modal */}
+      <Modal
+        visible={showPremiumModal && !showPaymentOptions && !showCreditCardForm}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={handleClosePremiumModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.premiumModalContent, { backgroundColor: colors.background.primary }]}>
+            <View style={styles.premiumHeader}>
+              <View style={styles.premiumTitleContainer}>
+                <Crown size={24} color={colors.primary} />
+                <Text style={[styles.premiumTitle, { color: colors.text.primary, fontFamily: colors.fonts?.bold }]}>
+                  Premium Plan
+                </Text>
+              </View>
+              <TouchableOpacity 
+                style={styles.closeButton}
+                onPress={handleClosePremiumModal}
+              >
+                <X size={24} color={colors.text.secondary} />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.premiumPricing}>
+              <Text style={[styles.premiumPrice, { color: colors.primary, fontFamily: colors.fonts?.bold }]}>
+                $3.99
+              </Text>
+              <Text style={[styles.premiumPeriod, { color: colors.text.secondary, fontFamily: colors.fonts?.medium }]}>
+                per month
+              </Text>
+            </View>
+            
+            <ScrollView style={styles.premiumFeaturesContainer} showsVerticalScrollIndicator={false}>
+              <View style={styles.premiumFeatures}>
+                <Text style={[styles.featuresTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
+                  Premium Features
+                </Text>
+                
+                {premiumFeatures.map((feature, index) => (
+                  <View key={index} style={styles.featureItem}>
+                    <Check size={20} color={colors.success} />
+                    <Text style={[styles.featureText, { color: colors.text.secondary, fontFamily: colors.fonts?.regular }]}>
+                      {feature}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </ScrollView>
+            
+            <View style={styles.premiumActions}>
+              <TouchableOpacity 
+                style={[styles.upgradeToPremiumButton, { backgroundColor: colors.primary }]}
+                onPress={handleUpgradeToPremium}
+              >
+                <Crown size={20} color="white" />
+                <Text style={[styles.upgradeToPremiumButtonText, { fontFamily: colors.fonts?.semiBold }]}>
+                  Upgrade to Premium
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.cancelPremiumButton}
+                onPress={handleClosePremiumModal}
+              >
+                <Text style={[styles.cancelPremiumButtonText, { color: colors.text.secondary, fontFamily: colors.fonts?.medium }]}>
+                  Maybe Later
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* Payment Options Modal */}
       <Modal
         visible={showPaymentOptions && !showCreditCardForm}
@@ -1035,6 +1135,14 @@ export default function HomeScreen() {
         <View style={styles.modalOverlay}>
           <View style={[styles.premiumModalContent, { backgroundColor: colors.background.primary }]}>
             <View style={styles.premiumHeader}>
+              <TouchableOpacity 
+                style={styles.backButton}
+                onPress={handleBackToFeatures}
+              >
+                <Text style={[styles.backButtonText, { color: colors.primary, fontFamily: colors.fonts?.medium }]}>
+                  ← Back
+                </Text>
+              </TouchableOpacity>
               <View style={styles.premiumTitleContainer}>
                 <Crown size={24} color={colors.primary} />
                 <Text style={[styles.premiumTitle, { color: colors.text.primary, fontFamily: colors.fonts?.bold }]}>
@@ -1621,10 +1729,12 @@ const styles = StyleSheet.create({
   },
   recapStats: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
+    marginBottom: 16,
   },
   recapStatItem: {
     alignItems: 'center',
+    flex: 1,
   },
   recapStatValue: {
     fontSize: 24,
@@ -1938,8 +2048,46 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
+  premiumFeaturesContainer: {
+    flex: 1,
+    marginBottom: 24,
+  },
+  premiumFeatures: {
+    paddingBottom: 16,
+  },
+  featuresTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  featureText: {
+    fontSize: 15,
+    lineHeight: 22,
+    marginLeft: 12,
+    flex: 1,
+  },
   premiumActions: {
     gap: 12,
+  },
+  upgradeToPremiumButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  upgradeToPremiumButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '600',
+    marginLeft: 8,
   },
   paymentTitle: {
     fontSize: 16,
