@@ -363,20 +363,10 @@ export default function TasksScreen() {
       // Simulate successful payment
       await upgradeToPremium();
       
-      Alert.alert(
-        'Payment Successful!',
-        'Welcome to Premium! You now have access to all premium features.',
-        [
-          {
-            text: 'Get Started',
-            onPress: () => {
-              setShowPaymentOptions(false);
-              setShowPremiumModal(false);
-              setShowCreditCardForm(false);
-            }
-          }
-        ]
-      );
+      // Close all modals without showing success popup
+      setShowPaymentOptions(false);
+      setShowPremiumModal(false);
+      setShowCreditCardForm(false);
     } catch (error) {
       Alert.alert('Payment Failed', 'There was an issue processing your payment. Please try again.');
     } finally {
@@ -486,35 +476,25 @@ export default function TasksScreen() {
       // Simulate successful payment
       await upgradeToPremium();
       
-      Alert.alert(
-        'Payment Successful!',
-        'Welcome to Premium! You now have access to all premium features.',
-        [
-          {
-            text: 'Get Started',
-            onPress: () => {
-              setShowPaymentOptions(false);
-              setShowPremiumModal(false);
-              setShowCreditCardForm(false);
-              // Reset form
-              setCardForm({
-                cardNumber: '',
-                expiryDate: '',
-                cardholderName: '',
-                cvv: '',
-                billingAddress: {
-                  street: '',
-                  city: '',
-                  state: '',
-                  zipCode: '',
-                  country: 'United States'
-                }
-              });
-              setCardFormErrors({});
-            }
-          }
-        ]
-      );
+      // Close all modals without showing success popup
+      setShowPaymentOptions(false);
+      setShowPremiumModal(false);
+      setShowCreditCardForm(false);
+      // Reset form
+      setCardForm({
+        cardNumber: '',
+        expiryDate: '',
+        cardholderName: '',
+        cvv: '',
+        billingAddress: {
+          street: '',
+          city: '',
+          state: '',
+          zipCode: '',
+          country: 'United States'
+        }
+      });
+      setCardFormErrors({});
     } catch (error) {
       Alert.alert('Payment Failed', 'There was an issue processing your payment. Please try again.');
     } finally {

@@ -263,18 +263,8 @@ export default function HomeScreen() {
       // Simulate successful payment
       await upgradeToPremium();
       
-      Alert.alert(
-        'Payment Successful!',
-        'Welcome to Premium! You now have access to all premium features.',
-        [
-          {
-            text: 'Get Started',
-            onPress: () => {
-              handleClosePremiumModal();
-            }
-          }
-        ]
-      );
+      // Close all modals without showing success popup
+      handleClosePremiumModal();
     } catch (error) {
       Alert.alert('Payment Failed', 'There was an issue processing your payment. Please try again.');
     } finally {
@@ -384,20 +374,10 @@ export default function HomeScreen() {
       // Simulate successful payment processing
       await upgradeToPremium();
       
-      Alert.alert(
-        'Payment Successful!',
-        'Welcome to Premium! You now have access to all premium features.',
-        [
-          {
-            text: 'Get Started',
-            onPress: () => {
-              handleClosePremiumModal();
-              // Reset form
-              resetCardForm();
-            }
-          }
-        ]
-      );
+      // Close all modals without showing success popup
+      handleClosePremiumModal();
+      // Reset form
+      resetCardForm();
     } catch (error) {
       Alert.alert('Payment Failed', 'There was an issue processing your payment. Please try again.');
     } finally {

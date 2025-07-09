@@ -1079,6 +1079,9 @@ export default function FriendsTab() {
                 ]}>
                   Projects
                 </Text>
+                {!user?.isPremium && (
+                  <Crown size={14} color={colors.primary} style={styles.premiumIcon} />
+                )}
               </View>
               {pendingProjectShares.length > 0 && (
                 <View style={[styles.notificationBadge, { backgroundColor: colors.error }]}>
