@@ -200,9 +200,6 @@ export const AIWorkoutAssistant: React.FC<AIWorkoutAssistantProps> = ({
   const [selectedSavedWorkout, setSelectedSavedWorkout] = useState<SavedAIWorkout | null>(null);
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [applySelectedDays, setApplySelectedDays] = useState<number[]>([]);
-  
-  // Premium upgrade modal
-  const [showPremiumModal, setShowPremiumModal] = useState(false);
 
   const resetState = () => {
     setCurrentStep('saved-workouts');
@@ -239,7 +236,6 @@ export const AIWorkoutAssistant: React.FC<AIWorkoutAssistantProps> = ({
     setSelectedSavedWorkout(null);
     setShowApplyModal(false);
     setApplySelectedDays([]);
-    setShowPremiumModal(false);
   };
 
   const handleClose = () => {
@@ -248,11 +244,6 @@ export const AIWorkoutAssistant: React.FC<AIWorkoutAssistantProps> = ({
   };
 
   const handleNextFromDays = () => {
-    if (!isPremium) {
-      setShowPremiumModal(true);
-      return;
-    }
-    
     if (selectedDays.length === 0) {
       Alert.alert('Selection Required', 'Please select at least one day to get workout help for.');
       return;
@@ -261,11 +252,6 @@ export const AIWorkoutAssistant: React.FC<AIWorkoutAssistantProps> = ({
   };
 
   const handleNextFromGoals = () => {
-    if (!isPremium) {
-      setShowPremiumModal(true);
-      return;
-    }
-    
     if (!selectedGoal.trim()) {
       Alert.alert('Goal Required', 'Please enter your training goal to continue.');
       return;
@@ -274,11 +260,6 @@ export const AIWorkoutAssistant: React.FC<AIWorkoutAssistantProps> = ({
   };
 
   const handleNextFromSpecifics = () => {
-    if (!isPremium) {
-      setShowPremiumModal(true);
-      return;
-    }
-    
     generateWorkoutPlan();
   };
 
@@ -385,11 +366,6 @@ export const AIWorkoutAssistant: React.FC<AIWorkoutAssistantProps> = ({
   };
 
   const generateWorkoutPlan = async () => {
-    if (!isPremium) {
-      setShowPremiumModal(true);
-      return;
-    }
-    
     setCurrentStep('generating');
     setIsLoading(true);
     setError(null);
@@ -424,7 +400,8 @@ export const AIWorkoutAssistant: React.FC<AIWorkoutAssistantProps> = ({
 
       const dayPlansText = selectedDayPlans.map(day => 
         `- ${day.dayName}: ${day.isWorkoutDay ? `${day.workoutType} - ${day.workoutDescription}` : 'Rest Day'}`
-      ).join('\n');
+      ).join('
+');
 
       const prompt = `You are a professional fitness trainer. Create detailed workout plans for the following days based on the user's training goal, workout specifics, and their planned workout types.
 
@@ -596,11 +573,6 @@ Make the workouts appropriate for the ${effectiveSpecs.experienceLevel} level an
   };
 
   const handleApplySavedWorkout = () => {
-    if (!isPremium) {
-      setShowPremiumModal(true);
-      return;
-    }
-    
     if (!selectedSavedWorkout || applySelectedDays.length === 0) {
       Alert.alert('Selection Required', 'Please select days to apply the workout to.');
       return;
@@ -645,20 +617,10 @@ Make the workouts appropriate for the ${effectiveSpecs.experienceLevel} level an
   };
   
   const handleStartNewWorkout = () => {
-    if (!isPremium) {
-      setShowPremiumModal(true);
-      return;
-    }
-    
     setCurrentStep('day-selection');
   };
   
   const handleApplyWorkout = (workoutId: string) => {
-    if (!isPremium) {
-      setShowPremiumModal(true);
-      return;
-    }
-    
     const workout = getSavedAIWorkouts().find(w => w.id === workoutId);
     if (workout) {
       setSelectedSavedWorkout(workout);
@@ -1624,60 +1586,6 @@ Make the workouts appropriate for the ${effectiveSpecs.experienceLevel} level an
       </View>
     );
   };
-  
-  const renderPremiumRequired = () => (
-    <View style={styles.premiumRequiredContainer}>
-      <View style={styles.premiumIconContainer}>
-        <Crown size={48} color={colors.primary} />
-      </View>
-      <Text style={[styles.premiumRequiredTitle, { color: colors.text.primary }]}>
-        Premium Feature
-      </Text>
-      <Text style={[styles.premiumRequiredDescription, { color: colors.text.secondary }]}>
-        AI Workout Assistant is a premium feature that provides personalized workout plans based on your goals, equipment, and preferences.
-      </Text>
-      <View style={styles.premiumFeaturesList}>
-        <View style={styles.premiumFeatureItem}>
-          <CheckCircle size={20} color={colors.success} />
-          <Text style={[styles.premiumFeatureText, { color: colors.text.secondary }]}>
-            Personalized workout plans for your specific goals
-          </Text>
-        </View>
-        <View style={styles.premiumFeatureItem}>
-          <CheckCircle size={20} color={colors.success} />
-          <Text style={[styles.premiumFeatureText, { color: colors.text.secondary }]}>
-            Customized exercises based on available equipment
-          </Text>
-        </View>
-        <View style={styles.premiumFeatureItem}>
-          <CheckCircle size={20} color={colors.success} />
-          <Text style={[styles.premiumFeatureText, { color: colors.text.secondary }]}>
-            Detailed instructions for proper form and technique
-          </Text>
-        </View>
-        <View style={styles.premiumFeatureItem}>
-          <CheckCircle size={20} color={colors.success} />
-          <Text style={[styles.premiumFeatureText, { color: colors.text.secondary }]}>
-            Save and reuse your favorite workout plans
-          </Text>
-        </View>
-      </View>
-      <Button
-        title="Upgrade to Premium"
-        onPress={() => setShowPremiumModal(true)}
-        icon={<Crown size={18} color="white" />}
-        style={styles.upgradeToPremiumButton}
-      />
-      <TouchableOpacity
-        style={styles.backToSavedButton}
-        onPress={() => setCurrentStep('saved-workouts')}
-      >
-        <Text style={[styles.backToSavedText, { color: colors.text.secondary }]}>
-          Back to Saved Workouts
-        </Text>
-      </TouchableOpacity>
-    </View>
-  );
 
   const renderSaveModal = () => (
     <Modal
@@ -1819,97 +1727,6 @@ Make the workouts appropriate for the ${effectiveSpecs.experienceLevel} level an
       </Modal>
     );
   };
-  
-  const renderPremiumModal = () => (
-    <Modal
-      visible={showPremiumModal}
-      transparent={true}
-      animationType="slide"
-      onRequestClose={() => setShowPremiumModal(false)}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={[styles.premiumModalContent, { backgroundColor: colors.background.primary }]}>
-          <View style={styles.premiumHeader}>
-            <View style={styles.premiumTitleContainer}>
-              <Crown size={24} color={colors.primary} />
-              <Text style={[styles.premiumTitle, { color: colors.text.primary }]}>
-                Premium Feature
-              </Text>
-            </View>
-            <TouchableOpacity 
-              style={styles.closeButton}
-              onPress={() => setShowPremiumModal(false)}
-            >
-              <X size={24} color={colors.text.secondary} />
-            </TouchableOpacity>
-          </View>
-          
-          <Text style={[styles.premiumDescription, { color: colors.text.secondary }]}>
-            AI Workout Assistant is a premium feature that provides personalized workout plans based on your goals, equipment, and preferences.
-          </Text>
-          
-          <View style={styles.premiumFeaturesList}>
-            <View style={styles.premiumFeatureItem}>
-              <CheckCircle size={20} color={colors.success} />
-              <Text style={[styles.premiumFeatureText, { color: colors.text.secondary }]}>
-                Personalized workout plans for your specific goals
-              </Text>
-            </View>
-            <View style={styles.premiumFeatureItem}>
-              <CheckCircle size={20} color={colors.success} />
-              <Text style={[styles.premiumFeatureText, { color: colors.text.secondary }]}>
-                Customized exercises based on available equipment
-              </Text>
-            </View>
-            <View style={styles.premiumFeatureItem}>
-              <CheckCircle size={20} color={colors.success} />
-              <Text style={[styles.premiumFeatureText, { color: colors.text.secondary }]}>
-                Detailed instructions for proper form and technique
-              </Text>
-            </View>
-            <View style={styles.premiumFeatureItem}>
-              <CheckCircle size={20} color={colors.success} />
-              <Text style={[styles.premiumFeatureText, { color: colors.text.secondary }]}>
-                Save and reuse your favorite workout plans
-              </Text>
-            </View>
-          </View>
-          
-          <View style={styles.premiumPricing}>
-            <Text style={[styles.premiumPrice, { color: colors.primary }]}>
-              $3.99
-            </Text>
-            <Text style={[styles.premiumPeriod, { color: colors.text.secondary }]}>
-              per month
-            </Text>
-          </View>
-          
-          <Button
-            title="Upgrade to Premium"
-            onPress={() => {
-              setShowPremiumModal(false);
-              Alert.alert(
-                'Premium Upgrade',
-                'To upgrade to Premium, please go to the Home screen and tap the Premium button in the top-right corner.',
-                [{ text: 'OK' }]
-              );
-            }}
-            icon={<Crown size={18} color="white" />}
-            style={styles.upgradeToPremiumButton}
-          />
-          
-          <TouchableOpacity
-            style={styles.maybeLaterButton}
-            onPress={() => setShowPremiumModal(false)}
-          >
-            <Text style={[styles.maybeLaterText, { color: colors.text.secondary }]}>
-              Maybe Later
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
-  );
 
   const renderError = () => (
     <View style={styles.errorContainer}>
@@ -1956,12 +1773,11 @@ Make the workouts appropriate for the ${effectiveSpecs.experienceLevel} level an
           {error ? renderError() : (
             <>
               {currentStep === 'saved-workouts' && renderSavedWorkouts()}
-              {currentStep === 'day-selection' && (isPremium ? renderDaySelection() : renderPremiumRequired())}
-              {currentStep === 'goal-selection' && (isPremium ? renderGoalSelection() : renderPremiumRequired())}
-              {currentStep === 'specifics' && (isPremium ? renderSpecifics() : renderPremiumRequired())}
+              {currentStep === 'day-selection' && (isPremium ? renderDaySelection() : renderSavedWorkouts())}
+              {currentStep === 'goal-selection' && (isPremium ? renderGoalSelection() : renderSavedWorkouts())}
+              {currentStep === 'specifics' && (isPremium ? renderSpecifics() : renderSavedWorkouts())}
               {currentStep === 'generating' && renderGenerating()}
               {currentStep === 'results' && renderResults()}
-              {currentStep === 'premium-required' && renderPremiumRequired()}
             </>
           )}
         </View>
@@ -1969,7 +1785,6 @@ Make the workouts appropriate for the ${effectiveSpecs.experienceLevel} level an
       
       {renderSaveModal()}
       {renderApplyModal()}
-      {renderPremiumModal()}
     </Modal>
   );
 };
@@ -2610,115 +2425,5 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     minWidth: 120,
-  },
-  // Premium required screen
-  premiumRequiredContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  premiumIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(0, 122, 255, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  premiumRequiredTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  premiumRequiredDescription: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 22,
-  },
-  premiumFeaturesList: {
-    width: '100%',
-    marginBottom: 24,
-  },
-  premiumFeatureItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  premiumFeatureText: {
-    fontSize: 14,
-    marginLeft: 12,
-    flex: 1,
-    lineHeight: 20,
-  },
-  upgradeToPremiumButton: {
-    width: '100%',
-    marginBottom: 16,
-  },
-  backToSavedButton: {
-    padding: 12,
-  },
-  backToSavedText: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  // Premium modal
-  premiumModalContent: {
-    width: '100%',
-    maxHeight: '80%',
-    borderRadius: 20,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  premiumHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  premiumTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  premiumTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    marginLeft: 8,
-  },
-  closeButton: {
-    padding: 4,
-  },
-  premiumDescription: {
-    fontSize: 16,
-    lineHeight: 22,
-    marginBottom: 24,
-    textAlign: 'center',
-  },
-  premiumPricing: {
-    alignItems: 'center',
-    marginVertical: 24,
-  },
-  premiumPrice: {
-    fontSize: 36,
-    fontWeight: '800',
-  },
-  premiumPeriod: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  maybeLaterButton: {
-    alignItems: 'center',
-    padding: 12,
-  },
-  maybeLaterText: {
-    fontSize: 16,
-    fontWeight: '500',
   },
 });

@@ -487,6 +487,9 @@ export default function HomeScreen() {
           </View>
         </View>
 
+        {/* Weekly Workout Tracker */}
+        <WeeklyWorkoutTracker />
+
         {/* Monthly Recap Section */}
         <View style={[styles.monthlyRecapSection, { backgroundColor: colors.background.primary }]}>
           <TouchableOpacity 
@@ -740,9 +743,6 @@ export default function HomeScreen() {
             </View>
           )}
         </View>
-
-        {/* Weekly Workout Tracker */}
-        <WeeklyWorkoutTracker />
 
         {/* Projects Section - Now visible for all users */}
         <View style={[styles.projectsSection, { backgroundColor: colors.background.primary }]}>

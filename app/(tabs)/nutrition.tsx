@@ -955,7 +955,7 @@ export default function HealthScreen() {
                 Get AI Workout Help
               </Text>
               <Text style={[styles.aiButtonSubtitle, { color: colors.text.secondary }]}>
-                Personalized workout plans based on your goals
+                Personalized daily workout plans based on your goals
               </Text>
             </View>
             <View style={styles.premiumFeatureTag}>
