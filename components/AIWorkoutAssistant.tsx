@@ -400,8 +400,7 @@ export const AIWorkoutAssistant: React.FC<AIWorkoutAssistantProps> = ({
 
       const dayPlansText = selectedDayPlans.map(day => 
         `- ${day.dayName}: ${day.isWorkoutDay ? `${day.workoutType} - ${day.workoutDescription}` : 'Rest Day'}`
-      ).join('
-');
+      ).join('\n');
 
       const prompt = `You are a professional fitness trainer. Create detailed workout plans for the following days based on the user's training goal, workout specifics, and their planned workout types.
 
