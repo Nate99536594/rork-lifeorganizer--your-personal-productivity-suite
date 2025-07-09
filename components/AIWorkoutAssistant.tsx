@@ -41,7 +41,9 @@ import {
   Trash2,
   Star,
   StarOff,
-  Crown
+  Crown,
+  Check,
+  CreditCard
 } from 'lucide-react-native';
 import { useColors } from '@/hooks/useColors';
 import { Button } from './Button';
@@ -156,7 +158,7 @@ export const AIWorkoutAssistant: React.FC<AIWorkoutAssistantProps> = ({
     toggleFavoriteAIWorkout,
     applySavedWorkoutToWeek 
   } = useWorkoutSessionStore();
-  const { user } = useAuthStore();
+  const { user, upgradeToPremium } = useAuthStore();
   const isPremium = user?.isPremium || false;
   
   const [currentStep, setCurrentStep] = useState<'day-selection' | 'goal-selection' | 'specifics' | 'generating' | 'results' | 'saved-workouts' | 'premium-required'>('saved-workouts');
@@ -201,6 +203,37 @@ export const AIWorkoutAssistant: React.FC<AIWorkoutAssistantProps> = ({
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [applySelectedDays, setApplySelectedDays] = useState<number[]>([]);
 
+  // Premium upgrade state
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [showPaymentOptions, setShowPaymentOptions] = useState(false);
+  const [showCreditCardForm, setShowCreditCardForm] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  
+  // Credit card form state
+  const [cardForm, setCardForm] = useState({
+    cardNumber: '',
+    expiryDate: '',
+    cardholderName: '',
+    cvv: '',
+    billingAddress: {
+      street: '',
+      city: '',
+      state: '',
+      zipCode: '',
+      country: 'United States'
+    }
+  });
+  const [cardFormErrors, setCardFormErrors] = useState<{[key: string]: string}>({});
+
+  const premiumFeatures = [
+    'Projects - Create and manage up to 5 projects to organize your tasks',
+    'AI workout assistant - Get personalized workout plans tailored to your fitness goals',
+    'Up to 30 tasks - Expand beyond the standard 8 task limit',
+    'Up to 12 goals - Expand beyond the standard 3 goal limit',
+    'Up to 20 tasks per project - Organize your work efficiently',
+    'Monthly recap - Detailed insights on completed and unfinished tasks/workouts'
+  ];
+
   const resetState = () => {
     setCurrentStep('saved-workouts');
     setSelectedGoal('');
@@ -236,6 +269,11 @@ export const AIWorkoutAssistant: React.FC<AIWorkoutAssistantProps> = ({
     setSelectedSavedWorkout(null);
     setShowApplyModal(false);
     setApplySelectedDays([]);
+    setShowPremiumModal(false);
+    setShowPaymentOptions(false);
+    setShowCreditCardForm(false);
+    setIsProcessingPayment(false);
+    resetCardForm();
   };
 
   const handleClose = () => {
@@ -616,6 +654,10 @@ Make the workouts appropriate for the ${effectiveSpecs.experienceLevel} level an
   };
   
   const handleStartNewWorkout = () => {
+    if (!isPremium) {
+      setShowPremiumModal(true);
+      return;
+    }
     setCurrentStep('day-selection');
   };
   
@@ -625,6 +667,188 @@ Make the workouts appropriate for the ${effectiveSpecs.experienceLevel} level an
       setSelectedSavedWorkout(workout);
       setShowApplyModal(true);
     }
+  };
+
+  // Premium upgrade functions
+  const handleUpgradeToPremium = () => {
+    setShowPaymentOptions(true);
+  };
+
+  const handleApplePayPurchase = async () => {
+    if (Platform.OS !== 'ios') {
+      Alert.alert('Not Available', 'Apple Pay is only available on iOS devices.');
+      return;
+    }
+
+    setIsProcessingPayment(true);
+    
+    try {
+      // Simulate Apple Pay payment process
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Simulate successful payment
+      await upgradeToPremium();
+      
+      // Close all modals without showing success popup
+      handleClosePremiumModal();
+    } catch (error) {
+      Alert.alert('Payment Failed', 'There was an issue processing your payment. Please try again.');
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
+  const validateCardForm = () => {
+    const errors: {[key: string]: string} = {};
+    
+    // Card number validation (16 digits)
+    const cardNumber = cardForm.cardNumber.replace(/\s/g, '');
+    if (!cardNumber) {
+      errors.cardNumber = 'Card number is required';
+    } else if (!/^\d{16}$/.test(cardNumber)) {
+      errors.cardNumber = 'Please enter a valid 16-digit card number';
+    }
+    
+    // Expiry date validation (MM/YY)
+    if (!cardForm.expiryDate) {
+      errors.expiryDate = 'Expiry date is required';
+    } else if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(cardForm.expiryDate)) {
+      errors.expiryDate = 'Please enter date in MM/YY format';
+    } else {
+      // Check if date is not in the past
+      const [month, year] = cardForm.expiryDate.split('/');
+      const currentDate = new Date();
+      const currentYear = currentDate.getFullYear() % 100;
+      const currentMonth = currentDate.getMonth() + 1;
+      
+      if (parseInt(year) < currentYear || (parseInt(year) === currentYear && parseInt(month) < currentMonth)) {
+        errors.expiryDate = 'Card has expired';
+      }
+    }
+    
+    // Cardholder name validation
+    if (!cardForm.cardholderName.trim()) {
+      errors.cardholderName = 'Cardholder name is required';
+    } else if (cardForm.cardholderName.trim().length < 2) {
+      errors.cardholderName = 'Please enter a valid name';
+    }
+    
+    // CVV validation (3-4 digits)
+    if (!cardForm.cvv) {
+      errors.cvv = 'CVV is required';
+    } else if (!/^\d{3,4}$/.test(cardForm.cvv)) {
+      errors.cvv = 'CVV must be 3 or 4 digits';
+    }
+    
+    // Billing address validation
+    if (!cardForm.billingAddress.street.trim()) {
+      errors.street = 'Street address is required';
+    }
+    
+    if (!cardForm.billingAddress.city.trim()) {
+      errors.city = 'City is required';
+    }
+    
+    if (!cardForm.billingAddress.state.trim()) {
+      errors.state = 'State is required';
+    }
+    
+    if (!cardForm.billingAddress.zipCode.trim()) {
+      errors.zipCode = 'ZIP code is required';
+    } else if (!/^\d{5}(-\d{4})?$/.test(cardForm.billingAddress.zipCode)) {
+      errors.zipCode = 'Please enter a valid ZIP code';
+    }
+    
+    setCardFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const formatCardNumber = (text: string) => {
+    // Remove all non-digits
+    const cleaned = text.replace(/\D/g, '');
+    // Add spaces every 4 digits
+    const formatted = cleaned.replace(/(\d{4})(?=\d)/g, '$1 ');
+    return formatted.substring(0, 19); // Max 16 digits + 3 spaces
+  };
+
+  const formatExpiryDate = (text: string) => {
+    // Remove all non-digits
+    const cleaned = text.replace(/\D/g, '');
+    // Add slash after 2 digits
+    if (cleaned.length >= 2) {
+      return cleaned.substring(0, 2) + '/' + cleaned.substring(2, 4);
+    }
+    return cleaned;
+  };
+
+  const handleCreditCardPurchase = () => {
+    // Disabled - do nothing when clicked
+  };
+
+  const handleProcessCreditCardPayment = async () => {
+    if (!validateCardForm()) {
+      Alert.alert('Invalid Information', 'Please check all fields and try again.');
+      return;
+    }
+
+    setIsProcessingPayment(true);
+    
+    try {
+      // Simulate credit card payment processing with more realistic delay
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      // Simulate successful payment processing
+      await upgradeToPremium();
+      
+      // Close all modals without showing success popup
+      handleClosePremiumModal();
+      // Reset form
+      resetCardForm();
+    } catch (error) {
+      Alert.alert('Payment Failed', 'There was an issue processing your payment. Please try again.');
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
+  const resetCardForm = () => {
+    setCardForm({
+      cardNumber: '',
+      expiryDate: '',
+      cardholderName: '',
+      cvv: '',
+      billingAddress: {
+        street: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        country: 'United States'
+      }
+    });
+    setCardFormErrors({});
+  };
+
+  const handleBackToPaymentOptions = () => {
+    setShowCreditCardForm(false);
+    setCardFormErrors({});
+  };
+
+  const handleBackToFeatures = () => {
+    setShowPaymentOptions(false);
+    setShowCreditCardForm(false);
+  };
+
+  const handleShowPremiumModal = () => {
+    setShowPremiumModal(true);
+    setShowPaymentOptions(false);
+    setShowCreditCardForm(false);
+  };
+
+  const handleClosePremiumModal = () => {
+    setShowPremiumModal(false);
+    setShowPaymentOptions(false);
+    setShowCreditCardForm(false);
+    resetCardForm();
   };
 
   const renderDaySelection = () => {
@@ -1746,6 +1970,555 @@ Make the workouts appropriate for the ${effectiveSpecs.experienceLevel} level an
     </View>
   );
 
+  const renderPremiumModal = () => (
+    <Modal
+      visible={showPremiumModal && !showPaymentOptions && !showCreditCardForm}
+      transparent={true}
+      animationType="slide"
+      onRequestClose={handleClosePremiumModal}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={[styles.premiumModalContent, { backgroundColor: colors.background.primary }]}>
+          <View style={styles.premiumHeader}>
+            <View style={styles.premiumTitleContainer}>
+              <Crown size={24} color={colors.primary} />
+              <Text style={[styles.premiumTitle, { color: colors.text.primary, fontFamily: colors.fonts?.bold }]}>
+                Premium Plan
+              </Text>
+            </View>
+            <TouchableOpacity 
+              style={styles.closeButton}
+              onPress={handleClosePremiumModal}
+            >
+              <X size={24} color={colors.text.secondary} />
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.premiumPricing}>
+            <Text style={[styles.premiumPrice, { color: colors.primary, fontFamily: colors.fonts?.bold }]}>
+              $3.99
+            </Text>
+            <Text style={[styles.premiumPeriod, { color: colors.text.secondary, fontFamily: colors.fonts?.medium }]}>
+              per month
+            </Text>
+          </View>
+          
+          <ScrollView style={styles.premiumFeaturesContainer} showsVerticalScrollIndicator={false}>
+            <View style={styles.premiumFeatures}>
+              <Text style={[styles.featuresTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
+                Premium Features
+              </Text>
+              
+              {premiumFeatures.map((feature, index) => (
+                <View key={index} style={styles.featureItem}>
+                  <Check size={20} color={colors.success} />
+                  <Text style={[styles.featureText, { color: colors.text.secondary, fontFamily: colors.fonts?.regular }]}>
+                    {feature}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </ScrollView>
+          
+          <View style={styles.premiumActions}>
+            <TouchableOpacity 
+              style={[styles.upgradeToPremiumButton, { backgroundColor: colors.primary }]}
+              onPress={handleUpgradeToPremium}
+            >
+              <Crown size={20} color="white" />
+              <Text style={[styles.upgradeToPremiumButtonText, { fontFamily: colors.fonts?.semiBold }]}>
+                Upgrade to Premium
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.cancelPremiumButton}
+              onPress={handleClosePremiumModal}
+            >
+              <Text style={[styles.cancelPremiumButtonText, { color: colors.text.secondary, fontFamily: colors.fonts?.medium }]}>
+                Maybe Later
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+
+  const renderPaymentOptionsModal = () => (
+    <Modal
+      visible={showPaymentOptions && !showCreditCardForm}
+      transparent={true}
+      animationType="slide"
+      onRequestClose={() => setShowPaymentOptions(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={[styles.premiumModalContent, { backgroundColor: colors.background.primary }]}>
+          <View style={styles.premiumHeader}>
+            <TouchableOpacity 
+              style={styles.backButton}
+              onPress={handleBackToFeatures}
+            >
+              <Text style={[styles.backButtonText, { color: colors.primary, fontFamily: colors.fonts?.medium }]}>
+                ← Back
+              </Text>
+            </TouchableOpacity>
+            <View style={styles.premiumTitleContainer}>
+              <Crown size={24} color={colors.primary} />
+              <Text style={[styles.premiumTitle, { color: colors.text.primary, fontFamily: colors.fonts?.bold }]}>
+                Choose Payment
+              </Text>
+            </View>
+            <TouchableOpacity 
+              style={styles.closeButton}
+              onPress={handleClosePremiumModal}
+            >
+              <X size={24} color={colors.text.secondary} />
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.premiumPricing}>
+            <Text style={[styles.premiumPrice, { color: colors.primary, fontFamily: colors.fonts?.bold }]}>
+              $3.99
+            </Text>
+            <Text style={[styles.premiumPeriod, { color: colors.text.secondary, fontFamily: colors.fonts?.medium }]}>
+              per month
+            </Text>
+          </View>
+          
+          <View style={styles.premiumActions}>
+            <Text style={[styles.paymentTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
+              Choose Payment Method
+            </Text>
+            
+            {Platform.OS === 'ios' && (
+              <TouchableOpacity 
+                style={[styles.applePayButton, { backgroundColor: '#000' }]}
+                onPress={handleApplePayPurchase}
+                disabled={isProcessingPayment}
+              >
+                <Text style={[styles.applePayButtonText, { fontFamily: colors.fonts?.semiBold }]}>
+                  {isProcessingPayment ? 'Processing...' : ' Pay'}
+                </Text>
+              </TouchableOpacity>
+            )}
+            
+            <TouchableOpacity 
+              style={[
+                styles.creditCardButton, 
+                { 
+                  backgroundColor: colors.text.light,
+                  opacity: 0.5
+                }
+              ]}
+              onPress={handleCreditCardPurchase}
+              disabled={true}
+            >
+              <CreditCard size={20} color="white" />
+              <Text style={[styles.creditCardButtonText, { fontFamily: colors.fonts?.semiBold }]}>
+                Pay with Card
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.cancelPremiumButton}
+              onPress={handleClosePremiumModal}
+              disabled={isProcessingPayment}
+            >
+              <Text style={[styles.cancelPremiumButtonText, { color: colors.text.secondary, fontFamily: colors.fonts?.medium }]}>
+                Cancel
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+
+  const renderCreditCardModal = () => (
+    <Modal
+      visible={showCreditCardForm}
+      transparent={true}
+      animationType="slide"
+      onRequestClose={() => setShowCreditCardForm(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={[styles.creditCardModalContent, { backgroundColor: colors.background.primary }]}>
+          <View style={styles.premiumHeader}>
+            <TouchableOpacity 
+              style={styles.backButton}
+              onPress={handleBackToPaymentOptions}
+            >
+              <Text style={[styles.backButtonText, { color: colors.primary, fontFamily: colors.fonts?.medium }]}>
+                ← Back
+              </Text>
+            </TouchableOpacity>
+            <View style={styles.premiumTitleContainer}>
+              <CreditCard size={24} color={colors.primary} />
+              <Text style={[styles.premiumTitle, { color: colors.text.primary, fontFamily: colors.fonts?.bold }]}>
+                Payment Details
+              </Text>
+            </View>
+            <TouchableOpacity 
+              style={styles.closeButton}
+              onPress={handleClosePremiumModal}
+            >
+              <X size={24} color={colors.text.secondary} />
+            </TouchableOpacity>
+          </View>
+          
+          <ScrollView style={styles.creditCardForm} showsVerticalScrollIndicator={false}>
+            <View style={styles.formSection}>
+              <Text style={[styles.sectionTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
+                Card Information
+              </Text>
+              
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, { color: colors.text.secondary }]}>Card Number</Text>
+                <View style={[styles.inputContainer, { borderColor: cardFormErrors.cardNumber ? colors.danger : colors.border }]}>
+                  <Text style={[styles.inputValue, { color: colors.text.primary }]}>
+                    {cardForm.cardNumber || 'Enter 16-digit card number'}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.editButton, { backgroundColor: colors.primary }]}
+                  onPress={() => {
+                    Alert.prompt(
+                      'Card Number',
+                      'Enter your 16-digit card number',
+                      (text) => {
+                        if (text) {
+                          setCardForm(prev => ({ ...prev, cardNumber: formatCardNumber(text) }));
+                        }
+                      },
+                      'plain-text',
+                      cardForm.cardNumber.replace(/\s/g, ''),
+                      'numeric'
+                    );
+                  }}
+                >
+                  <Text style={styles.editButtonText}>Edit</Text>
+                </TouchableOpacity>
+                {cardFormErrors.cardNumber && (
+                  <Text style={[styles.errorText, { color: colors.danger }]}>{cardFormErrors.cardNumber}</Text>
+                )}
+              </View>
+              
+              <View style={styles.formRow}>
+                <View style={[styles.inputGroup, styles.halfWidth]}>
+                  <Text style={[styles.inputLabel, { color: colors.text.secondary }]}>Expiry Date</Text>
+                  <View style={[styles.inputContainer, { borderColor: cardFormErrors.expiryDate ? colors.danger : colors.border }]}>
+                    <Text style={[styles.inputValue, { color: colors.text.primary }]}>
+                      {cardForm.expiryDate || 'MM/YY'}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.editButton, { backgroundColor: colors.primary }]}
+                    onPress={() => {
+                      Alert.prompt(
+                        'Expiry Date',
+                        'Enter expiry date (MM/YY)',
+                        (text) => {
+                          if (text) {
+                            setCardForm(prev => ({ ...prev, expiryDate: formatExpiryDate(text) }));
+                          }
+                        },
+                        'plain-text',
+                        cardForm.expiryDate,
+                        'numeric'
+                      );
+                    }}
+                  >
+                    <Text style={styles.editButtonText}>Edit</Text>
+                  </TouchableOpacity>
+                  {cardFormErrors.expiryDate && (
+                    <Text style={[styles.errorText, { color: colors.danger }]}>{cardFormErrors.expiryDate}</Text>
+                  )}
+                </View>
+                
+                <View style={[styles.inputGroup, styles.halfWidth]}>
+                  <Text style={[styles.inputLabel, { color: colors.text.secondary }]}>CVV</Text>
+                  <View style={[styles.inputContainer, { borderColor: cardFormErrors.cvv ? colors.danger : colors.border }]}>
+                    <Text style={[styles.inputValue, { color: colors.text.primary }]}>
+                      {cardForm.cvv ? '•'.repeat(cardForm.cvv.length) : 'CVV'}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.editButton, { backgroundColor: colors.primary }]}
+                    onPress={() => {
+                      Alert.prompt(
+                        'CVV',
+                        'Enter 3 or 4 digit security code',
+                        (text) => {
+                          if (text) {
+                            setCardForm(prev => ({ ...prev, cvv: text.replace(/\D/g, '').substring(0, 4) }));
+                          }
+                        },
+                        'plain-text',
+                        '',
+                        'numeric'
+                      );
+                    }}
+                  >
+                    <Text style={styles.editButtonText}>Edit</Text>
+                  </TouchableOpacity>
+                  {cardFormErrors.cvv && (
+                    <Text style={[styles.errorText, { color: colors.danger }]}>{cardFormErrors.cvv}</Text>
+                  )}
+                </View>
+              </View>
+              
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, { color: colors.text.secondary }]}>Cardholder Name</Text>
+                <View style={[styles.inputContainer, { borderColor: cardFormErrors.cardholderName ? colors.danger : colors.border }]}>
+                  <Text style={[styles.inputValue, { color: colors.text.primary }]}>
+                    {cardForm.cardholderName || 'Full name as on card'}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.editButton, { backgroundColor: colors.primary }]}
+                  onPress={() => {
+                    Alert.prompt(
+                      'Cardholder Name',
+                      'Enter full name as it appears on card',
+                      (text) => {
+                        if (text) {
+                          setCardForm(prev => ({ ...prev, cardholderName: text }));
+                        }
+                      },
+                      'plain-text',
+                      cardForm.cardholderName
+                    );
+                  }}
+                >
+                  <Text style={styles.editButtonText}>Edit</Text>
+                </TouchableOpacity>
+                {cardFormErrors.cardholderName && (
+                  <Text style={[styles.errorText, { color: colors.danger }]}>{cardFormErrors.cardholderName}</Text>
+                )}
+              </View>
+            </View>
+            
+            <View style={styles.formSection}>
+              <Text style={[styles.sectionTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
+                Billing Address
+              </Text>
+              
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, { color: colors.text.secondary }]}>Street Address</Text>
+                <View style={[styles.inputContainer, { borderColor: cardFormErrors.street ? colors.danger : colors.border }]}>
+                  <Text style={[styles.inputValue, { color: colors.text.primary }]}>
+                    {cardForm.billingAddress.street || 'Enter street address'}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.editButton, { backgroundColor: colors.primary }]}
+                  onPress={() => {
+                    Alert.prompt(
+                      'Street Address',
+                      'Enter your street address',
+                      (text) => {
+                        if (text) {
+                          setCardForm(prev => ({ 
+                            ...prev, 
+                            billingAddress: { ...prev.billingAddress, street: text }
+                          }));
+                        }
+                      },
+                      'plain-text',
+                      cardForm.billingAddress.street
+                    );
+                  }}
+                >
+                  <Text style={styles.editButtonText}>Edit</Text>
+                </TouchableOpacity>
+                {cardFormErrors.street && (
+                  <Text style={[styles.errorText, { color: colors.danger }]}>{cardFormErrors.street}</Text>
+                )}
+              </View>
+              
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, { color: colors.text.secondary }]}>City</Text>
+                <View style={[styles.inputContainer, { borderColor: cardFormErrors.city ? colors.danger : colors.border }]}>
+                  <Text style={[styles.inputValue, { color: colors.text.primary }]}>
+                    {cardForm.billingAddress.city || 'Enter city'}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.editButton, { backgroundColor: colors.primary }]}
+                  onPress={() => {
+                    Alert.prompt(
+                      'City',
+                      'Enter your city',
+                      (text) => {
+                        if (text) {
+                          setCardForm(prev => ({ 
+                            ...prev, 
+                            billingAddress: { ...prev.billingAddress, city: text }
+                          }));
+                        }
+                      },
+                      'plain-text',
+                      cardForm.billingAddress.city
+                    );
+                  }}
+                >
+                  <Text style={styles.editButtonText}>Edit</Text>
+                </TouchableOpacity>
+                {cardFormErrors.city && (
+                  <Text style={[styles.errorText, { color: colors.danger }]}>{cardFormErrors.city}</Text>
+                )}
+              </View>
+              
+              <View style={styles.formRow}>
+                <View style={[styles.inputGroup, styles.halfWidth]}>
+                  <Text style={[styles.inputLabel, { color: colors.text.secondary }]}>State</Text>
+                  <View style={[styles.inputContainer, { borderColor: cardFormErrors.state ? colors.danger : colors.border }]}>
+                    <Text style={[styles.inputValue, { color: colors.text.primary }]}>
+                      {cardForm.billingAddress.state || 'State'}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.editButton, { backgroundColor: colors.primary }]}
+                    onPress={() => {
+                      Alert.prompt(
+                        'State',
+                        'Enter state (e.g., CA, NY)',
+                        (text) => {
+                          if (text) {
+                            setCardForm(prev => ({ 
+                              ...prev, 
+                              billingAddress: { ...prev.billingAddress, state: text.toUpperCase() }
+                            }));
+                          }
+                        },
+                        'plain-text',
+                        cardForm.billingAddress.state
+                      );
+                    }}
+                  >
+                    <Text style={styles.editButtonText}>Edit</Text>
+                  </TouchableOpacity>
+                  {cardFormErrors.state && (
+                    <Text style={[styles.errorText, { color: colors.danger }]}>{cardFormErrors.state}</Text>
+                  )}
+                </View>
+                
+                <View style={[styles.inputGroup, styles.halfWidth]}>
+                  <Text style={[styles.inputLabel, { color: colors.text.secondary }]}>ZIP Code</Text>
+                  <View style={[styles.inputContainer, { borderColor: cardFormErrors.zipCode ? colors.danger : colors.border }]}>
+                    <Text style={[styles.inputValue, { color: colors.text.primary }]}>
+                      {cardForm.billingAddress.zipCode || 'ZIP'}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.editButton, { backgroundColor: colors.primary }]}
+                    onPress={() => {
+                      Alert.prompt(
+                        'ZIP Code',
+                        'Enter ZIP code',
+                        (text) => {
+                          if (text) {
+                            setCardForm(prev => ({ 
+                              ...prev, 
+                              billingAddress: { ...prev.billingAddress, zipCode: text }
+                            }));
+                          }
+                        },
+                        'plain-text',
+                        cardForm.billingAddress.zipCode,
+                        'numeric'
+                      );
+                    }}
+                  >
+                    <Text style={styles.editButtonText}>Edit</Text>
+                  </TouchableOpacity>
+                  {cardFormErrors.zipCode && (
+                    <Text style={[styles.errorText, { color: colors.danger }]}>{cardFormErrors.zipCode}</Text>
+                  )}
+                </View>
+              </View>
+              
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, { color: colors.text.secondary }]}>Country</Text>
+                <View style={[styles.inputContainer, { borderColor: colors.border }]}>
+                  <Text style={[styles.inputValue, { color: colors.text.primary }]}>
+                    {cardForm.billingAddress.country}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.editButton, { backgroundColor: colors.primary }]}
+                  onPress={() => {
+                    Alert.prompt(
+                      'Country',
+                      'Enter country',
+                      (text) => {
+                        if (text) {
+                          setCardForm(prev => ({ 
+                            ...prev, 
+                            billingAddress: { ...prev.billingAddress, country: text }
+                          }));
+                        }
+                      },
+                      'plain-text',
+                      cardForm.billingAddress.country
+                    );
+                  }}
+                >
+                  <Text style={styles.editButtonText}>Edit</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+            
+            <View style={styles.paymentSummary}>
+              <Text style={[styles.summaryTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
+                Payment Summary
+              </Text>
+              <View style={styles.summaryRow}>
+                <Text style={[styles.summaryLabel, { color: colors.text.secondary, fontFamily: colors.fonts?.regular }]}>
+                  Premium Plan (Monthly)
+                </Text>
+                <Text style={[styles.summaryAmount, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
+                  $3.99
+                </Text>
+              </View>
+              <View style={[styles.summaryRow, styles.totalRow]}>
+                <Text style={[styles.totalLabel, { color: colors.text.primary, fontFamily: colors.fonts?.bold }]}>
+                  Total
+                </Text>
+                <Text style={[styles.totalAmount, { color: colors.primary, fontFamily: colors.fonts?.bold }]}>
+                  $3.99
+                </Text>
+              </View>
+            </View>
+          </ScrollView>
+          
+          <View style={styles.creditCardActions}>
+            <TouchableOpacity 
+              style={[styles.processPaymentButton, { backgroundColor: colors.primary }]}
+              onPress={handleProcessCreditCardPayment}
+              disabled={isProcessingPayment}
+            >
+              <Text style={[styles.processPaymentButtonText, { fontFamily: colors.fonts?.semiBold }]}>
+                {isProcessingPayment ? 'Processing Payment...' : 'Complete Payment'}
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.cancelPremiumButton}
+              onPress={handleClosePremiumModal}
+              disabled={isProcessingPayment}
+            >
+              <Text style={[styles.cancelPremiumButtonText, { color: colors.text.secondary, fontFamily: colors.fonts?.medium }]}>
+                Cancel
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+
   return (
     <Modal
       visible={visible}
@@ -1784,6 +2557,9 @@ Make the workouts appropriate for the ${effectiveSpecs.experienceLevel} level an
       
       {renderSaveModal()}
       {renderApplyModal()}
+      {renderPremiumModal()}
+      {renderPaymentOptionsModal()}
+      {renderCreditCardModal()}
     </Modal>
   );
 };
@@ -2424,5 +3200,246 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     minWidth: 120,
+  },
+  // Premium modal styles
+  premiumModalContent: {
+    width: '100%',
+    maxHeight: '85%',
+    borderRadius: 20,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  creditCardModalContent: {
+    width: '100%',
+    maxHeight: '90%',
+    borderRadius: 20,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  premiumHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  premiumTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  premiumTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginLeft: 8,
+  },
+  closeButton: {
+    padding: 4,
+  },
+  backButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  premiumPricing: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  premiumPrice: {
+    fontSize: 48,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  premiumPeriod: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  premiumFeaturesContainer: {
+    flex: 1,
+    marginBottom: 24,
+  },
+  premiumFeatures: {
+    paddingBottom: 16,
+  },
+  featuresTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  featureText: {
+    fontSize: 15,
+    lineHeight: 22,
+    marginLeft: 12,
+    flex: 1,
+  },
+  premiumActions: {
+    gap: 12,
+  },
+  upgradeToPremiumButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  upgradeToPremiumButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  paymentTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  applePayButton: {
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  applePayButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  creditCardButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  creditCardButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  cancelPremiumButton: {
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  cancelPremiumButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  creditCardForm: {
+    flex: 1,
+    marginBottom: 20,
+  },
+  formSection: {
+    marginBottom: 24,
+  },
+  formRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  halfWidth: {
+    flex: 1,
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  inputContainer: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    minHeight: 48,
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  inputValue: {
+    fontSize: 16,
+  },
+  editButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+  },
+  editButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  errorText: {
+    fontSize: 12,
+    marginTop: 4,
+  },
+  paymentSummary: {
+    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  summaryTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  summaryLabel: {
+    fontSize: 14,
+  },
+  summaryAmount: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  totalRow: {
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 122, 255, 0.2)',
+    paddingTop: 8,
+    marginTop: 8,
+    marginBottom: 0,
+  },
+  totalLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  totalAmount: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  creditCardActions: {
+    gap: 12,
+  },
+  processPaymentButton: {
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  processPaymentButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '600',
   },
 });
