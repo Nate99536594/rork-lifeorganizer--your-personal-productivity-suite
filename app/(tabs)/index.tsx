@@ -744,19 +744,32 @@ export default function HomeScreen() {
         {/* Weekly Workout Tracker */}
         <WeeklyWorkoutTracker />
 
-        {/* Projects Section */}
-        {user?.isPremium && (
-          <View style={[styles.projectsSection, { backgroundColor: colors.background.primary }]}>
-            <View style={styles.projectsSectionHeader}>
-              <View style={styles.projectsTitleContainer}>
-                <Folder size={20} color="#8B5CF6" />
-                <Text style={[styles.sectionTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
-                  Projects
-                </Text>
-              </View>
+        {/* Projects Section - Now visible for all users */}
+        <View style={[styles.projectsSection, { backgroundColor: colors.background.primary }]}>
+          <TouchableOpacity 
+            style={styles.projectsSectionHeader}
+            onPress={() => {
+              if (!user?.isPremium) {
+                handleShowPremiumModal();
+              }
+            }}
+          >
+            <View style={styles.projectsTitleContainer}>
+              <Folder size={20} color="#8B5CF6" />
+              <Text style={[styles.sectionTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
+                Projects
+              </Text>
+              {!user?.isPremium && (
+                <View style={styles.premiumFeatureTag}>
+                  <Crown size={16} color={colors.primary} />
+                </View>
+              )}
             </View>
-            
-            {projects.length === 0 ? (
+          </TouchableOpacity>
+          
+          {user?.isPremium ? (
+            // Premium user content
+            projects.length === 0 ? (
               <View style={styles.noProjectsContainer}>
                 <Text style={[styles.noProjectsText, { color: colors.text.secondary, fontFamily: colors.fonts?.regular }]}>
                   No projects yet
@@ -792,9 +805,23 @@ export default function HomeScreen() {
                   </Text>
                 </TouchableOpacity>
               </View>
-            )}
-          </View>
-        )}
+            )
+          ) : (
+            // Non-premium user content
+            <View style={styles.premiumFeatureTeaser}>
+              <Text style={[styles.premiumFeatureTeaser, { color: colors.text.secondary, fontFamily: colors.fonts?.regular }]}>
+                Upgrade to Premium to create and manage up to 5 projects to organize your tasks
+              </Text>
+              <Button 
+                title="Upgrade to Premium" 
+                onPress={handleShowPremiumModal}
+                variant="primary"
+                size="small"
+                style={styles.upgradeButton}
+              />
+            </View>
+          )}
+        </View>
         
         {/* General Tasks Section */}
         {generalTasks.length > 0 && (
