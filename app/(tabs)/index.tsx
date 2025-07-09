@@ -10,7 +10,7 @@ import {
   Platform
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Target, ArrowRight, Filter, Crown, X, Check, CreditCard, BarChart, Calendar, Plus } from 'lucide-react-native';
+import { Target, ArrowRight, Filter, Crown, X, Check, CreditCard, BarChart, Calendar, Plus, Folder } from 'lucide-react-native';
 import { useColors } from '@/hooks/useColors';
 import { GoalItem } from '@/components/GoalItem';
 import { TaskItem } from '@/components/TaskItem';
@@ -769,6 +769,7 @@ export default function HomeScreen() {
           <View style={[styles.projectsSection, { backgroundColor: colors.background.primary }]}>
             <View style={styles.projectsSectionHeader}>
               <View style={styles.projectsTitleContainer}>
+                <Folder size={20} color="#8B5CF6" />
                 <Text style={[styles.sectionTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
                   Projects
                 </Text>

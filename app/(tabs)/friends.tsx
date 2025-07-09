@@ -1071,7 +1071,7 @@ export default function FriendsTab() {
               <View style={styles.tabContent}>
                 <Folder 
                   size={18} 
-                  color={activeTab === 'projects' ? colors.primary : colors.text.secondary} 
+                  color="#8B5CF6"
                 />
                 <Text style={[
                   styles.tabText,
@@ -1079,7 +1079,6 @@ export default function FriendsTab() {
                 ]}>
                   Projects
                 </Text>
-                <Crown size={14} color={colors.primary} style={styles.premiumIcon} />
               </View>
               {pendingProjectShares.length > 0 && (
                 <View style={[styles.notificationBadge, { backgroundColor: colors.error }]}>

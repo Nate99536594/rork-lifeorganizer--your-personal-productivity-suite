@@ -569,6 +569,7 @@ export default function TasksScreen() {
           onPress={handleProjectsTabPress}
         >
           <View style={styles.projectsTabContent}>
+            <Folder size={14} color="#8B5CF6" />
             <Text style={[
               styles.tabText,
               { color: activeTab === 'projects' ? colors.primary : colors.text.secondary }
@@ -718,6 +719,7 @@ export default function TasksScreen() {
                     onPress={handleAddProjectPress}
                     disabled={projects.length >= currentProjectLimit}
                   >
+                    <Folder size={16} color="white" />
                     <Plus size={20} color="white" />
                   </TouchableOpacity>
                 </View>
@@ -1299,16 +1301,18 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     width: 36,
     height: 36,
     borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+    gap: 2,
   },
   searchContainer: {
     flexDirection: 'row',
