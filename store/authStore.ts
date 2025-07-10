@@ -157,41 +157,69 @@ export const useAuthStore = create<AuthState>()(
         try {
           await new Promise(resolve => setTimeout(resolve, 1000));
           
-          const { generateUniqueUsername, generateUniqueAnonymousUsername } = get();
-          const usernameResult = await generateUniqueUsername('John', 'Doe');
+          // Simulate fetching user data from backend
+          // In a real app, this would be an API call that returns user data including premium status
+          const existingUserData = await AsyncStorage.getItem('auth-storage');
+          let isPremium = false;
+          let existingUser = null;
           
-          if (usernameResult.error) {
-            throw new Error(usernameResult.error);
+          if (existingUserData) {
+            try {
+              const parsedData = JSON.parse(existingUserData);
+              if (parsedData.state && parsedData.state.user && parsedData.state.user.email === email) {
+                existingUser = parsedData.state.user;
+                isPremium = existingUser.isPremium || false;
+              }
+            } catch (e) {
+              console.log('Could not parse existing user data');
+            }
           }
           
-          const anonymousUsername = generateUniqueAnonymousUsername();
+          const { generateUniqueUsername, generateUniqueAnonymousUsername } = get();
           
-          set({ 
-            user: { 
-              id: '1', 
-              firstName: 'John',
-              lastName: 'Doe',
-              username: usernameResult.username,
-              anonymousUsername,
-              usernameType: 'real',
-              email,
-              name: 'John Doe', // Added for compatibility
-              isPremium: false,
-              createdAt: new Date().toISOString(),
-              privacySettings: {
-                accountVisibility: 'friends'
-              }
-            },
-            isAuthenticated: true,
-            isLoading: false
-          });
-          
-          // Trigger account creation achievement
-          setTimeout(() => {
-            const achievementStore = useAchievementStore.getState();
-            achievementStore.onAccountCreated();
-            achievementStore.checkAndUnlockAchievements();
-          }, 1000);
+          // If user exists, use their data, otherwise create new user
+          if (existingUser) {
+            set({ 
+              user: existingUser,
+              isAuthenticated: true,
+              isLoading: false
+            });
+          } else {
+            const usernameResult = await generateUniqueUsername('John', 'Doe');
+            
+            if (usernameResult.error) {
+              throw new Error(usernameResult.error);
+            }
+            
+            const anonymousUsername = generateUniqueAnonymousUsername();
+            
+            set({ 
+              user: { 
+                id: '1', 
+                firstName: 'John',
+                lastName: 'Doe',
+                username: usernameResult.username,
+                anonymousUsername,
+                usernameType: 'real',
+                email,
+                name: 'John Doe', // Added for compatibility
+                isPremium: isPremium,
+                createdAt: new Date().toISOString(),
+                privacySettings: {
+                  accountVisibility: 'friends'
+                }
+              },
+              isAuthenticated: true,
+              isLoading: false
+            });
+            
+            // Trigger account creation achievement for new users
+            setTimeout(() => {
+              const achievementStore = useAchievementStore.getState();
+              achievementStore.onAccountCreated();
+              achievementStore.checkAndUnlockAchievements();
+            }, 1000);
+          }
         } catch (error) {
           console.error('Login error:', error);
           set({ isLoading: false });
@@ -203,6 +231,21 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true });
         try {
           await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Check if user already exists (shouldn't happen in signup, but just in case)
+          const existingUserData = await AsyncStorage.getItem('auth-storage');
+          let isPremium = false;
+          
+          if (existingUserData) {
+            try {
+              const parsedData = JSON.parse(existingUserData);
+              if (parsedData.state && parsedData.state.user && parsedData.state.user.email === email) {
+                isPremium = parsedData.state.user.isPremium || false;
+              }
+            } catch (e) {
+              console.log('Could not parse existing user data');
+            }
+          }
           
           const { generateUniqueUsername, generateUniqueAnonymousUsername } = get();
           const usernameResult = await generateUniqueUsername(firstName, lastName);
@@ -224,7 +267,7 @@ export const useAuthStore = create<AuthState>()(
               usernameType: 'real',
               email,
               name: `${firstName.trim()} ${lastName.trim()}`, // Added for compatibility
-              isPremium: false,
+              isPremium: isPremium, // Preserve premium status if it exists
               createdAt: new Date().toISOString(),
               privacySettings: {
                 accountVisibility: 'friends'
@@ -234,12 +277,14 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false
           });
           
-          // Trigger account creation achievement
-          setTimeout(() => {
-            const achievementStore = useAchievementStore.getState();
-            achievementStore.onAccountCreated();
-            achievementStore.checkAndUnlockAchievements();
-          }, 1000);
+          // Trigger account creation achievement for new users
+          if (!isPremium) { // Only trigger for truly new users
+            setTimeout(() => {
+              const achievementStore = useAchievementStore.getState();
+              achievementStore.onAccountCreated();
+              achievementStore.checkAndUnlockAchievements();
+            }, 1000);
+          }
         } catch (error) {
           console.error('Signup error:', error);
           set({ isLoading: false });
@@ -253,6 +298,34 @@ export const useAuthStore = create<AuthState>()(
           await new Promise(resolve => setTimeout(resolve, 1000));
           
           const email = "user@example.com";
+          
+          // Check if user already exists
+          const existingUserData = await AsyncStorage.getItem('auth-storage');
+          let isPremium = false;
+          let existingUser = null;
+          
+          if (existingUserData) {
+            try {
+              const parsedData = JSON.parse(existingUserData);
+              if (parsedData.state && parsedData.state.user && parsedData.state.user.email === email) {
+                existingUser = parsedData.state.user;
+                isPremium = existingUser.isPremium || false;
+              }
+            } catch (e) {
+              console.log('Could not parse existing user data');
+            }
+          }
+          
+          // If user exists, use their data
+          if (existingUser) {
+            set({ 
+              user: existingUser,
+              isAuthenticated: true,
+              isLoading: false
+            });
+            return;
+          }
+          
           const { generateUniqueUsername, generateUniqueAnonymousUsername } = get();
           const usernameResult = await generateUniqueUsername('Apple', 'User');
           
@@ -271,7 +344,7 @@ export const useAuthStore = create<AuthState>()(
                 usernameType: 'real',
                 email,
                 name: 'Apple User', // Added for compatibility
-                isPremium: false,
+                isPremium: isPremium,
                 createdAt: new Date().toISOString(),
                 privacySettings: {
                   accountVisibility: 'friends'
@@ -281,12 +354,14 @@ export const useAuthStore = create<AuthState>()(
               isLoading: false
             });
             
-            // Trigger account creation achievement
-            setTimeout(() => {
-              const achievementStore = useAchievementStore.getState();
-              achievementStore.onAccountCreated();
-              achievementStore.checkAndUnlockAchievements();
-            }, 1000);
+            // Trigger account creation achievement for new users
+            if (!isPremium) {
+              setTimeout(() => {
+                const achievementStore = useAchievementStore.getState();
+                achievementStore.onAccountCreated();
+                achievementStore.checkAndUnlockAchievements();
+              }, 1000);
+            }
             return;
           }
           
@@ -302,7 +377,7 @@ export const useAuthStore = create<AuthState>()(
               usernameType: 'real',
               email,
               name: 'Apple User', // Added for compatibility
-              isPremium: false,
+              isPremium: isPremium,
               createdAt: new Date().toISOString(),
               privacySettings: {
                 accountVisibility: 'friends'
@@ -312,12 +387,14 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false
           });
           
-          // Trigger account creation achievement
-          setTimeout(() => {
-            const achievementStore = useAchievementStore.getState();
-            achievementStore.onAccountCreated();
-            achievementStore.checkAndUnlockAchievements();
-          }, 1000);
+          // Trigger account creation achievement for new users
+          if (!isPremium) {
+            setTimeout(() => {
+              const achievementStore = useAchievementStore.getState();
+              achievementStore.onAccountCreated();
+              achievementStore.checkAndUnlockAchievements();
+            }, 1000);
+          }
         } catch (error) {
           console.error('Apple sign in error:', error);
           set({ isLoading: false });
