@@ -35,7 +35,7 @@ export const GoalItem: React.FC<GoalItemProps> = ({
   };
 
   const getProgressColor = () => {
-    if (goal.completed) return colors.success;
+    if (goal.status === 'completed') return colors.success;
     if (goal.progress < 30) return colors.danger;
     if (goal.progress < 70) return colors.warning;
     return colors.primary;
@@ -59,7 +59,7 @@ export const GoalItem: React.FC<GoalItemProps> = ({
       style={[
         styles.container,
         { backgroundColor: colors.background.primary },
-        goal.completed && { borderLeftWidth: 4, borderLeftColor: colors.success }
+        goal.status === 'completed' && { borderLeftWidth: 4, borderLeftColor: colors.success }
       ]} 
       onPress={handlePress}
       activeOpacity={0.7}
@@ -98,11 +98,11 @@ export const GoalItem: React.FC<GoalItemProps> = ({
         />
       </View>
       
-      {goal.targetDate && (
+      {goal.deadline && (
         <View style={styles.deadline}>
           <Clock size={14} color={colors.text.secondary} />
           <Text style={[styles.deadlineText, { color: colors.text.secondary }]}>
-            {formatDate(goal.targetDate)}
+            {formatDate(goal.deadline)}
           </Text>
         </View>
       )}
