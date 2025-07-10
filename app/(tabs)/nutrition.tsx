@@ -1619,12 +1619,14 @@ export default function HealthScreen() {
                 Personalized daily workout plans based on your goals
               </Text>
             </View>
-            <View style={styles.premiumFeatureTag}>
-              <Crown size={16} color={colors.primary} />
-              <Text style={[styles.premiumFeatureText, { color: colors.primary }]}>
-                Premium
-              </Text>
-            </View>
+            {!user?.isPremium && (
+              <View style={styles.premiumFeatureTag}>
+                <Crown size={16} color={colors.primary} />
+                <Text style={[styles.premiumFeatureText, { color: colors.primary }]}>
+                  Premium
+                </Text>
+              </View>
+            )}
           </View>
         </TouchableOpacity>
 
