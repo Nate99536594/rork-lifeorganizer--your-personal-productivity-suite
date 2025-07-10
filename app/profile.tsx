@@ -7,7 +7,7 @@ import {
   TouchableOpacity 
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Award, Calendar, Flame, Users, Star, Shield, Activity, AtSign, Trophy } from 'lucide-react-native';
+import { ArrowLeft, Award, Calendar, Flame, Users, Star, Shield, Activity, AtSign, Trophy, Settings } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { useAuthStore } from '@/store/authStore';
@@ -161,7 +161,7 @@ export default function ProfileScreen() {
           style={styles.settingsButton}
           onPress={() => router.push('/settings')}
         >
-          <Shield size={24} color={colors.text.primary} />
+          <Settings size={24} color={colors.text.primary} />
         </TouchableOpacity>
       </View>
       

@@ -10,7 +10,7 @@ import {
   Platform
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Target, ArrowRight, Filter, Crown, X, Check, BarChart, Calendar, Plus, Folder } from 'lucide-react-native';
+import { Target, ArrowRight, Filter, Crown, X, Check, BarChart, Calendar, Plus, Folder, ChevronDown, ChevronUp } from 'lucide-react-native';
 import { useColors } from '@/hooks/useColors';
 import { GoalItem } from '@/components/GoalItem';
 import { TaskItem } from '@/components/TaskItem';
@@ -332,6 +332,13 @@ export default function HomeScreen() {
                 <View style={styles.premiumFeatureTag}>
                   <Crown size={16} color={colors.primary} />
                 </View>
+              )}
+              {user?.isPremium && (
+                showMonthlyRecap ? (
+                  <ChevronUp size={20} color={colors.text.secondary} />
+                ) : (
+                  <ChevronDown size={20} color={colors.text.secondary} />
+                )
               )}
             </View>
           </TouchableOpacity>
@@ -696,14 +703,16 @@ export default function HomeScreen() {
                 Your Goals
               </Text>
             </View>
-            <Text style={[styles.goalCount, { color: colors.text.secondary, fontFamily: colors.fonts?.medium }]}>
-              ({goals.length}/{goalLimits.total})
-            </Text>
-            {!user?.isPremium && (
-              <Text style={[styles.premiumHint, { color: colors.primary }]}>
-                • Premium: 12 goals
+            <View style={styles.goalsMetaContainer}>
+              <Text style={[styles.goalCount, { color: colors.text.secondary, fontFamily: colors.fonts?.medium }]}>
+                ({goals.length}/{goalLimits.total})
               </Text>
-            )}
+              {!user?.isPremium && (
+                <Text style={[styles.premiumHint, { color: colors.primary }]}>
+                  • Premium: 12 goals
+                </Text>
+              )}
+            </View>
           </View>
           
           {/* Filter and Add Goal buttons moved below the title */}
@@ -1223,15 +1232,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
     gap: 8,
+    marginBottom: 8,
+  },
+  goalsMetaContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
   },
   goalCount: {
     fontSize: 14,
-    marginLeft: 8,
+    marginRight: 8,
   },
   premiumHint: {
     fontSize: 12,
     fontWeight: '500',
-    marginLeft: 8,
   },
   goalsActions: {
     flexDirection: 'row',
