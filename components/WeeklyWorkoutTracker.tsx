@@ -64,7 +64,7 @@ export const WeeklyWorkoutTracker: React.FC<WeeklyWorkoutTrackerProps> = ({ onEd
     }, 60000); // Check every minute
     
     return () => clearInterval(intervalId);
-  }, [sessions, currentDate]);
+  }, [sessions]);
   
   const weekProgress = getWeekProgress(sessions);
   const currentWeekPlan = getCurrentWeekPlan();
