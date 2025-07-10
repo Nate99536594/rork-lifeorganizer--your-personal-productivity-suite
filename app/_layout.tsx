@@ -34,10 +34,6 @@ export default function RootLayout() {
     }
   }, [fontsLoaded]);
 
-  if (!fontsLoaded) {
-    return null;
-  }
-
   // Disable web development tools and element selection - web only
   useEffect(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined' && typeof document !== 'undefined') {
@@ -75,6 +71,10 @@ export default function RootLayout() {
       };
     }
   }, []);
+
+  if (!fontsLoaded) {
+    return null;
+  }
 
   return <RootLayoutNav />;
 }
