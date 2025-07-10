@@ -246,17 +246,23 @@ export interface WorkoutSession {
 
 export interface WeeklyWorkoutPlan {
   id: string;
-  name: string;
-  week: string; // YYYY-WW format
+  name?: string;
+  week?: string; // YYYY-WW format
   weekStart: string; // YYYY-MM-DD format
   days: WeeklyWorkoutDay[];
   createdAt: string;
+  updatedAt?: string;
+  isModified?: boolean;
+  originalDays?: WeeklyWorkoutDay[]; // For tracking original plan when modified mid-week
+  modifiedAt?: string; // When the plan was last modified
 }
 
 export interface WeeklyWorkoutDay {
   dayIndex: number; // 0-6 (Sunday-Saturday)
   isWorkoutDay: boolean;
+  originalIsWorkoutDay?: boolean; // For tracking original plan when modified mid-week
   workoutType?: string;
+  originalWorkoutType?: string; // For tracking original workout type when modified mid-week
   workoutDescription?: string;
   plannedDuration?: number;
   completed?: boolean;

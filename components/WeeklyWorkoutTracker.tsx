@@ -5,7 +5,7 @@ import { useWorkoutSessionStore } from '@/store/workoutSessionStore';
 import { useWeeklyWorkoutStore } from '@/store/weeklyWorkoutStore';
 import { FlameIcon } from './FlameIcon';
 import { CheckCircle, Circle, Calendar, Target, Settings } from 'lucide-react-native';
-import { DayPlan } from '@/types';
+import { WeeklyWorkoutDay } from '@/types';
 
 interface WeeklyWorkoutTrackerProps {
   onEditPlan?: () => void;
@@ -83,14 +83,14 @@ export const WeeklyWorkoutTracker: React.FC<WeeklyWorkoutTrackerProps> = ({ onEd
   // Calculate progress based on original weekly plan for streak calculation
   const getCompletedWorkoutDays = () => {
     if (!originalPlan) return 0;
-    return originalPlan.days.filter((day: DayPlan) => 
+    return originalPlan.days.filter((day: WeeklyWorkoutDay) => 
       (day.originalIsWorkoutDay || day.isWorkoutDay) && day.isCompleted
     ).length;
   };
   
   const getTotalWorkoutDays = () => {
     if (!originalPlan) return 0;
-    return originalPlan.days.filter((day: DayPlan) => 
+    return originalPlan.days.filter((day: WeeklyWorkoutDay) => 
       day.originalIsWorkoutDay || day.isWorkoutDay
     ).length;
   };
@@ -98,7 +98,7 @@ export const WeeklyWorkoutTracker: React.FC<WeeklyWorkoutTrackerProps> = ({ onEd
   const handleCompleteWorkout = (dayIndex: number) => {
     if (canCompleteWorkout(dayIndex)) {
       // Show confirmation dialog with more detailed message
-      const dayPlan = currentWeekPlan?.days.find((day: DayPlan) => day.dayIndex === dayIndex);
+      const dayPlan = currentWeekPlan?.days.find((day: WeeklyWorkoutDay) => day.dayIndex === dayIndex);
       const workoutType = dayPlan?.workoutType || 'workout';
       
       Alert.alert(
@@ -126,7 +126,7 @@ This will count towards your weekly streak progress.`,
         ]
       );
     } else {
-      const dayPlan = currentWeekPlan?.days.find((day: DayPlan) => day.dayIndex === dayIndex);
+      const dayPlan = currentWeekPlan?.days.find((day: WeeklyWorkoutDay) => day.dayIndex === dayIndex);
       if (dayPlan?.isCompleted) {
         Alert.alert('Already completed', 'You have already completed your workout for today!');
       } else if (!dayPlan?.isWorkoutDay) {
@@ -167,8 +167,8 @@ This will count towards your weekly streak progress.`,
       
       <View style={styles.weekTracker}>
         {dayAbbreviations.map((dayAbbr, index) => {
-          const dayPlan = currentWeekPlan?.days.find((day: DayPlan) => day.dayIndex === index);
-          const originalDay = originalPlan?.days.find((day: DayPlan) => day.dayIndex === index);
+          const dayPlan = currentWeekPlan?.days.find((day: WeeklyWorkoutDay) => day.dayIndex === index);
+          const originalDay = originalPlan?.days.find((day: WeeklyWorkoutDay) => day.dayIndex === index);
           const isToday = todayIndex === index;
           const isWorkoutDay = dayPlan?.isWorkoutDay || false;
           const isCompleted = dayPlan?.isCompleted || false;

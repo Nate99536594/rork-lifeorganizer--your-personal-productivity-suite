@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { WeeklyPlan, DayPlan, WorkoutType } from '@/types';
+import { WeeklyWorkoutPlan, WeeklyWorkoutDay } from '@/types';
 
 interface WeeklyWorkoutState {
   currentWeekStreak: number;
@@ -12,8 +12,8 @@ interface WeeklyWorkoutState {
   weekProgress: boolean[]; // Array of 7 booleans representing each day of the week (Sunday to Saturday)
   
   // Weekly Plan state
-  currentWeeklyPlan: WeeklyPlan | null;
-  weeklyPlans: WeeklyPlan[]; // Historical plans
+  currentWeeklyWorkoutPlan: WeeklyWorkoutPlan | null;
+  weeklyPlans: WeeklyWorkoutPlan[]; // Historical plans
   
   // Core methods
   updateWeeklyStreak: (workoutDate: string) => void;
@@ -23,17 +23,17 @@ interface WeeklyWorkoutState {
   updateWeekProgress: (sessions: any[]) => void;
   
   // Weekly Plan methods
-  createWeeklyPlan: () => void;
-  updateDayPlan: (dayIndex: number, updates: Partial<DayPlan>) => void;
+  createWeeklyWorkoutPlan: () => void;
+  updateWeeklyWorkoutDay: (dayIndex: number, updates: Partial<WeeklyWorkoutDay>) => void;
   completeWorkout: (dayIndex: number) => void;
-  validateWeeklyPlan: (plan: WeeklyPlan) => { isValid: boolean; error?: string };
-  getCurrentWeekPlan: () => WeeklyPlan | null;
+  validateWeeklyWorkoutPlan: (plan: WeeklyWorkoutPlan) => { isValid: boolean; error?: string };
+  getCurrentWeekPlan: () => WeeklyWorkoutPlan | null;
   canCompleteWorkout: (dayIndex: number) => boolean;
   getWorkoutTypesForWeek: () => { [key: number]: string };
   
   // Enhanced methods for mid-week plan changes
-  preserveCompletionStatus: (originalPlan: WeeklyPlan, newPlan: WeeklyPlan) => WeeklyPlan;
-  getOriginalPlanForStreak: () => WeeklyPlan | null;
+  preserveCompletionStatus: (originalPlan: WeeklyWorkoutPlan, newPlan: WeeklyWorkoutPlan) => WeeklyWorkoutPlan;
+  getOriginalPlanForStreak: () => WeeklyWorkoutPlan | null;
   isPlanActuallyModified: () => boolean;
   checkAndUpdateModificationStatus: () => void;
   isCurrentPlanSameAsOriginal: () => boolean;
@@ -88,10 +88,10 @@ const isInCurrentWeek = (sessionDate: string, currentWeekStart: string): boolean
 };
 
 // Create default weekly plan
-const createDefaultWeeklyPlan = (weekStart: string): WeeklyPlan => {
+const createDefaultWeeklyWorkoutPlan = (weekStart: string): WeeklyWorkoutPlan => {
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   
-  const days: DayPlan[] = dayNames.map((dayName, index) => ({
+  const days: WeeklyWorkoutDay[] = dayNames.map((dayName, index) => ({
     dayIndex: index,
     dayName,
     isWorkoutDay: index !== 0 && index !== 6, // Default: Monday-Friday workout, Weekend rest
@@ -115,7 +115,7 @@ const createDefaultWeeklyPlan = (weekStart: string): WeeklyPlan => {
 };
 
 // Helper function to compare two day plans for equality (ignoring completion status)
-const areDaysEqual = (day1: DayPlan, day2: DayPlan): boolean => {
+const areDaysEqual = (day1: WeeklyWorkoutDay, day2: WeeklyWorkoutDay): boolean => {
   return (
     day1.isWorkoutDay === day2.isWorkoutDay &&
     day1.workoutType === day2.workoutType &&
@@ -124,7 +124,7 @@ const areDaysEqual = (day1: DayPlan, day2: DayPlan): boolean => {
 };
 
 // Helper function to compare current plan with truly original plan
-const isPlanDifferentFromTrueOriginal = (currentPlan: WeeklyPlan): boolean => {
+const isPlanDifferentFromTrueOriginal = (currentPlan: WeeklyWorkoutPlan): boolean => {
   if (!currentPlan.originalDays) return false;
   
   // Compare current plan with the very first original plan
@@ -141,7 +141,7 @@ const isPlanDifferentFromTrueOriginal = (currentPlan: WeeklyPlan): boolean => {
 };
 
 // Helper function to check if current plan matches original exactly
-const isCurrentPlanSameAsOriginal = (currentPlan: WeeklyPlan): boolean => {
+const isCurrentPlanSameAsOriginal = (currentPlan: WeeklyWorkoutPlan): boolean => {
   if (!currentPlan.originalDays) return true; // If no original days stored, consider it the same
   
   // Compare current plan with original plan
@@ -168,7 +168,7 @@ export const useWeeklyWorkoutStore = create<WeeklyWorkoutState>()(
       weekProgress: [false, false, false, false, false, false, false], // Sun, Mon, Tue, Wed, Thu, Fri, Sat
       
       // Weekly Plan state
-      currentWeeklyPlan: null,
+      currentWeeklyWorkoutPlan: null,
       weeklyPlans: [],
       
       updateWeeklyStreak: (workoutDate) => {
@@ -190,7 +190,7 @@ export const useWeeklyWorkoutStore = create<WeeklyWorkoutState>()(
       },
       
       resetWeekIfNeeded: () => {
-        const { currentWeekStart, createWeeklyPlan } = get();
+        const { currentWeekStart, createWeeklyWorkoutPlan } = get();
         const now = new Date();
         const currentSunday = formatDateString(getSunday(now));
         
@@ -202,7 +202,7 @@ export const useWeeklyWorkoutStore = create<WeeklyWorkoutState>()(
           });
           
           // Create new weekly plan for the new week
-          createWeeklyPlan();
+          createWeeklyWorkoutPlan();
         }
       },
       
@@ -310,34 +310,34 @@ export const useWeeklyWorkoutStore = create<WeeklyWorkoutState>()(
       },
       
       // Weekly Plan methods
-      createWeeklyPlan: () => {
+      createWeeklyWorkoutPlan: () => {
         const { currentWeekStart, weeklyPlans } = get();
         
         // Check if plan already exists for current week
         const existingPlan = weeklyPlans.find(plan => plan.weekStart === currentWeekStart);
         
         if (!existingPlan) {
-          const newPlan = createDefaultWeeklyPlan(currentWeekStart);
+          const newPlan = createDefaultWeeklyWorkoutPlan(currentWeekStart);
           
           set(state => ({
-            currentWeeklyPlan: newPlan,
+            currentWeeklyWorkoutPlan: newPlan,
             weeklyPlans: [...state.weeklyPlans, newPlan]
           }));
         } else {
-          set({ currentWeeklyPlan: existingPlan });
+          set({ currentWeeklyWorkoutPlan: existingPlan });
         }
       },
       
-      updateDayPlan: (dayIndex, updates) => {
+      updateWeeklyWorkoutDay: (dayIndex, updates) => {
         const { checkAndUpdateModificationStatus } = get();
         
         set(state => {
-          if (!state.currentWeeklyPlan) return state;
+          if (!state.currentWeeklyWorkoutPlan) return state;
           
           const today = new Date();
           const todayIndex = today.getDay();
           
-          const updatedDays = state.currentWeeklyPlan.days.map(day => {
+          const updatedDays = state.currentWeeklyWorkoutPlan.days.map(day => {
             if (day.dayIndex === dayIndex) {
               const updatedDay = { ...day, ...updates };
               
@@ -369,14 +369,14 @@ export const useWeeklyWorkoutStore = create<WeeklyWorkoutState>()(
           });
           
           const updatedPlan = {
-            ...state.currentWeeklyPlan,
+            ...state.currentWeeklyWorkoutPlan,
             days: updatedDays,
             updatedAt: new Date().toISOString(),
           };
           
           // Update original days if this is the first modification
-          if (!state.currentWeeklyPlan.isModified && !state.currentWeeklyPlan.originalDays) {
-            updatedPlan.originalDays = JSON.parse(JSON.stringify(state.currentWeeklyPlan.days));
+          if (!state.currentWeeklyWorkoutPlan.isModified && !state.currentWeeklyWorkoutPlan.originalDays) {
+            updatedPlan.originalDays = JSON.parse(JSON.stringify(state.currentWeeklyWorkoutPlan.days));
           }
           
           // Update in weeklyPlans array as well
@@ -385,7 +385,7 @@ export const useWeeklyWorkoutStore = create<WeeklyWorkoutState>()(
           );
           
           const newState = {
-            currentWeeklyPlan: updatedPlan,
+            currentWeeklyWorkoutPlan: updatedPlan,
             weeklyPlans: updatedPlans
           };
           
@@ -399,17 +399,17 @@ export const useWeeklyWorkoutStore = create<WeeklyWorkoutState>()(
       },
       
       completeWorkout: (dayIndex) => {
-        const { canCompleteWorkout, updateDayPlan } = get();
+        const { canCompleteWorkout, updateWeeklyWorkoutDay } = get();
         
         if (canCompleteWorkout(dayIndex)) {
-          updateDayPlan(dayIndex, {
+          updateWeeklyWorkoutDay(dayIndex, {
             isCompleted: true,
             completedAt: new Date().toISOString()
           });
         }
       },
       
-      validateWeeklyPlan: (plan) => {
+      validateWeeklyWorkoutPlan: (plan) => {
         const workoutDays = plan.days.filter(day => day.isWorkoutDay).length;
         const restDays = plan.days.filter(day => !day.isWorkoutDay).length;
         
@@ -431,24 +431,24 @@ export const useWeeklyWorkoutStore = create<WeeklyWorkoutState>()(
       },
       
       getCurrentWeekPlan: () => {
-        const { currentWeeklyPlan, currentWeekStart, createWeeklyPlan } = get();
+        const { currentWeeklyWorkoutPlan, currentWeekStart, createWeeklyWorkoutPlan } = get();
         
-        if (!currentWeeklyPlan || currentWeeklyPlan.weekStart !== currentWeekStart) {
-          createWeeklyPlan();
-          return get().currentWeeklyPlan;
+        if (!currentWeeklyWorkoutPlan || currentWeeklyWorkoutPlan.weekStart !== currentWeekStart) {
+          createWeeklyWorkoutPlan();
+          return get().currentWeeklyWorkoutPlan;
         }
         
-        return currentWeeklyPlan;
+        return currentWeeklyWorkoutPlan;
       },
       
       canCompleteWorkout: (dayIndex) => {
-        const { currentWeeklyPlan } = get();
+        const { currentWeeklyWorkoutPlan } = get();
         const today = new Date();
         const todayIndex = today.getDay();
         
-        if (!currentWeeklyPlan) return false;
+        if (!currentWeeklyWorkoutPlan) return false;
         
-        const dayPlan = currentWeeklyPlan.days.find(day => day.dayIndex === dayIndex);
+        const dayPlan = currentWeeklyWorkoutPlan.days.find(day => day.dayIndex === dayIndex);
         
         if (!dayPlan || !dayPlan.isWorkoutDay || dayPlan.isCompleted) {
           return false;
@@ -459,11 +459,11 @@ export const useWeeklyWorkoutStore = create<WeeklyWorkoutState>()(
       },
       
       getWorkoutTypesForWeek: () => {
-        const { currentWeeklyPlan } = get();
+        const { currentWeeklyWorkoutPlan } = get();
         const workoutTypes: { [key: number]: string } = {};
         
-        if (currentWeeklyPlan) {
-          currentWeeklyPlan.days.forEach(day => {
+        if (currentWeeklyWorkoutPlan) {
+          currentWeeklyWorkoutPlan.days.forEach(day => {
             if (day.isWorkoutDay && day.workoutType) {
               workoutTypes[day.dayIndex] = day.workoutType;
             }
@@ -509,17 +509,17 @@ export const useWeeklyWorkoutStore = create<WeeklyWorkoutState>()(
       },
       
       getOriginalPlanForStreak: () => {
-        const { currentWeeklyPlan } = get();
+        const { currentWeeklyWorkoutPlan } = get();
         
-        if (!currentWeeklyPlan) return null;
+        if (!currentWeeklyWorkoutPlan) return null;
         
         // If plan has been modified, use original days for streak calculation
-        if (currentWeeklyPlan.isModified && currentWeeklyPlan.originalDays) {
+        if (currentWeeklyWorkoutPlan.isModified && currentWeeklyWorkoutPlan.originalDays) {
           return {
-            ...currentWeeklyPlan,
-            days: currentWeeklyPlan.originalDays.map(originalDay => {
+            ...currentWeeklyWorkoutPlan,
+            days: currentWeeklyWorkoutPlan.originalDays.map(originalDay => {
               // Find the current day to get completion status
-              const currentDay = currentWeeklyPlan.days.find(d => d.dayIndex === originalDay.dayIndex);
+              const currentDay = currentWeeklyWorkoutPlan.days.find(d => d.dayIndex === originalDay.dayIndex);
               return {
                 ...originalDay,
                 isCompleted: currentDay?.isCompleted || false,
@@ -532,33 +532,33 @@ export const useWeeklyWorkoutStore = create<WeeklyWorkoutState>()(
         }
         
         // If not modified, use current plan
-        return currentWeeklyPlan;
+        return currentWeeklyWorkoutPlan;
       },
       
       isPlanActuallyModified: () => {
-        const { currentWeeklyPlan } = get();
+        const { currentWeeklyWorkoutPlan } = get();
         
-        if (!currentWeeklyPlan || !currentWeeklyPlan.originalDays) {
+        if (!currentWeeklyWorkoutPlan || !currentWeeklyWorkoutPlan.originalDays) {
           return false;
         }
         
         // Use the improved comparison function that checks against the true original
-        return isPlanDifferentFromTrueOriginal(currentWeeklyPlan);
+        return isPlanDifferentFromTrueOriginal(currentWeeklyWorkoutPlan);
       },
       
       isCurrentPlanSameAsOriginal: () => {
-        const { currentWeeklyPlan } = get();
+        const { currentWeeklyWorkoutPlan } = get();
         
-        if (!currentWeeklyPlan) return true;
+        if (!currentWeeklyWorkoutPlan) return true;
         
-        return isCurrentPlanSameAsOriginal(currentWeeklyPlan);
+        return isCurrentPlanSameAsOriginal(currentWeeklyWorkoutPlan);
       },
       
       checkAndUpdateModificationStatus: () => {
         const { isPlanActuallyModified, isCurrentPlanSameAsOriginal } = get();
         
         set(state => {
-          if (!state.currentWeeklyPlan) return state;
+          if (!state.currentWeeklyWorkoutPlan) return state;
           
           const actuallyModified = isPlanActuallyModified();
           const sameAsOriginal = isCurrentPlanSameAsOriginal();
@@ -567,9 +567,9 @@ export const useWeeklyWorkoutStore = create<WeeklyWorkoutState>()(
           const shouldShowAsModified = actuallyModified && !sameAsOriginal;
           
           const updatedPlan = {
-            ...state.currentWeeklyPlan,
+            ...state.currentWeeklyWorkoutPlan,
             isModified: shouldShowAsModified,
-            modifiedAt: shouldShowAsModified ? (state.currentWeeklyPlan.modifiedAt || new Date().toISOString()) : undefined,
+            modifiedAt: shouldShowAsModified ? (state.currentWeeklyWorkoutPlan.modifiedAt || new Date().toISOString()) : undefined,
           };
           
           // Update in weeklyPlans array as well
@@ -578,7 +578,7 @@ export const useWeeklyWorkoutStore = create<WeeklyWorkoutState>()(
           );
           
           return {
-            currentWeeklyPlan: updatedPlan,
+            currentWeeklyWorkoutPlan: updatedPlan,
             weeklyPlans: updatedPlans
           };
         });
@@ -592,10 +592,10 @@ export const useWeeklyWorkoutStore = create<WeeklyWorkoutState>()(
           if (state) {
             // Ensure we have a weekly plan for the current week
             setTimeout(() => {
-              const { resetWeekIfNeeded, createWeeklyPlan, getCurrentWeekPlan, checkAndUpdateModificationStatus } = state;
+              const { resetWeekIfNeeded, createWeeklyWorkoutPlan, getCurrentWeekPlan, checkAndUpdateModificationStatus } = state;
               resetWeekIfNeeded();
               if (!getCurrentWeekPlan()) {
-                createWeeklyPlan();
+                createWeeklyWorkoutPlan();
               }
               // Check modification status on rehydration
               checkAndUpdateModificationStatus();
