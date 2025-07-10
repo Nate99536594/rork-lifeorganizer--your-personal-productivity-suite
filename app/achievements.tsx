@@ -127,146 +127,61 @@ export default function AchievementsScreen() {
         </View>
       </View>
       
-      {/* Category Filter Grid */}
-      <View style={styles.categoryGrid}>
-        <View style={styles.categoryRow}>
-          <TouchableOpacity
-            style={[
-              styles.categorySquare,
-              selectedCategory === 'all' && { backgroundColor: colors.primary + '20' },
-              { borderColor: colors.border, backgroundColor: colors.background.primary }
-            ]}
-            onPress={() => setSelectedCategory('all')}
-          >
-            <Trophy 
-              size={24} 
-              color={selectedCategory === 'all' ? colors.primary : colors.text.secondary} 
-            />
-            <Text style={[
-              styles.categorySquareTitle,
-              { color: selectedCategory === 'all' ? colors.primary : colors.text.primary }
-            ]}>
-              All
-            </Text>
-            <Text style={[
-              styles.categorySquareCount,
-              { color: selectedCategory === 'all' ? colors.primary : colors.text.secondary }
-            ]}>
-              {getUnlockedCount('all')}/{getTotalCount('all')}
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={[
-              styles.categorySquare,
-              selectedCategory === 'social' && { backgroundColor: colors.primary + '20' },
-              { borderColor: colors.border, backgroundColor: colors.background.primary }
-            ]}
-            onPress={() => setSelectedCategory('social')}
-          >
-            <Users 
-              size={24} 
-              color={selectedCategory === 'social' ? colors.primary : colors.text.secondary} 
-            />
-            <Text style={[
-              styles.categorySquareTitle,
-              { color: selectedCategory === 'social' ? colors.primary : colors.text.primary }
-            ]}>
-              Social
-            </Text>
-            <Text style={[
-              styles.categorySquareCount,
-              { color: selectedCategory === 'social' ? colors.primary : colors.text.secondary }
-            ]}>
-              {getUnlockedCount('social')}/{getTotalCount('social')}
-            </Text>
-          </TouchableOpacity>
-        </View>
+      {/* Category Filter */}
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.categoryFilter}
+      >
+        <TouchableOpacity
+          style={[
+            styles.categoryButton,
+            selectedCategory === 'all' && { backgroundColor: colors.primary + '20' },
+            { borderColor: colors.border }
+          ]}
+          onPress={() => setSelectedCategory('all')}
+        >
+          <Trophy 
+            size={20} 
+            color={selectedCategory === 'all' ? colors.primary : colors.text.secondary} 
+          />
+          <Text style={[
+            styles.categoryButtonText,
+            { color: selectedCategory === 'all' ? colors.primary : colors.text.secondary }
+          ]}>
+            All ({getUnlockedCount('all')}/{getTotalCount('all')})
+          </Text>
+        </TouchableOpacity>
         
-        <View style={styles.categoryRow}>
-          <TouchableOpacity
-            style={[
-              styles.categorySquare,
-              selectedCategory === 'streak' && { backgroundColor: colors.primary + '20' },
-              { borderColor: colors.border, backgroundColor: colors.background.primary }
-            ]}
-            onPress={() => setSelectedCategory('streak')}
-          >
-            <Flame 
-              size={24} 
-              color={selectedCategory === 'streak' ? colors.primary : colors.text.secondary} 
-            />
-            <Text style={[
-              styles.categorySquareTitle,
-              { color: selectedCategory === 'streak' ? colors.primary : colors.text.primary }
-            ]}>
-              Streak
-            </Text>
-            <Text style={[
-              styles.categorySquareCount,
-              { color: selectedCategory === 'streak' ? colors.primary : colors.text.secondary }
-            ]}>
-              {getUnlockedCount('streak')}/{getTotalCount('streak')}
-            </Text>
-          </TouchableOpacity>
+        {Object.entries(CATEGORY_INFO).map(([key, info]) => {
+          const category = key as AchievementCategory;
+          const IconComponent = info.icon;
+          const isSelected = selectedCategory === category;
           
-          <TouchableOpacity
-            style={[
-              styles.categorySquare,
-              selectedCategory === 'milestone' && { backgroundColor: colors.primary + '20' },
-              { borderColor: colors.border, backgroundColor: colors.background.primary }
-            ]}
-            onPress={() => setSelectedCategory('milestone')}
-          >
-            <Target 
-              size={24} 
-              color={selectedCategory === 'milestone' ? colors.primary : colors.text.secondary} 
-            />
-            <Text style={[
-              styles.categorySquareTitle,
-              { color: selectedCategory === 'milestone' ? colors.primary : colors.text.primary }
-            ]}>
-              Milestone
-            </Text>
-            <Text style={[
-              styles.categorySquareCount,
-              { color: selectedCategory === 'milestone' ? colors.primary : colors.text.secondary }
-            ]}>
-              {getUnlockedCount('milestone')}/{getTotalCount('milestone')}
-            </Text>
-          </TouchableOpacity>
-        </View>
-        
-        <View style={styles.categoryRow}>
-          <TouchableOpacity
-            style={[
-              styles.categorySquare,
-              selectedCategory === 'longevity' && { backgroundColor: colors.primary + '20' },
-              { borderColor: colors.border, backgroundColor: colors.background.primary }
-            ]}
-            onPress={() => setSelectedCategory('longevity')}
-          >
-            <Calendar 
-              size={24} 
-              color={selectedCategory === 'longevity' ? colors.primary : colors.text.secondary} 
-            />
-            <Text style={[
-              styles.categorySquareTitle,
-              { color: selectedCategory === 'longevity' ? colors.primary : colors.text.primary }
-            ]}>
-              Longevity
-            </Text>
-            <Text style={[
-              styles.categorySquareCount,
-              { color: selectedCategory === 'longevity' ? colors.primary : colors.text.secondary }
-            ]}>
-              {getUnlockedCount('longevity')}/{getTotalCount('longevity')}
-            </Text>
-          </TouchableOpacity>
-          
-          <View style={styles.categorySquarePlaceholder} />
-        </View>
-      </View>
+          return (
+            <TouchableOpacity
+              key={category}
+              style={[
+                styles.categoryButton,
+                isSelected && { backgroundColor: colors.primary + '20' },
+                { borderColor: colors.border }
+              ]}
+              onPress={() => setSelectedCategory(category)}
+            >
+              <IconComponent 
+                size={20} 
+                color={isSelected ? colors.primary : colors.text.secondary} 
+              />
+              <Text style={[
+                styles.categoryButtonText,
+                { color: isSelected ? colors.primary : colors.text.secondary }
+              ]}>
+                {info.name} ({getUnlockedCount(category)}/{getTotalCount(category)})
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
       
       {/* Category Description */}
       {selectedCategory !== 'all' && (
@@ -362,36 +277,23 @@ const styles = StyleSheet.create({
     backgroundColor: '#E5E7EB',
     marginHorizontal: 20,
   },
-  categoryGrid: {
+  categoryFilter: {
     paddingHorizontal: 16,
     paddingVertical: 16,
     gap: 12,
   },
-  categoryRow: {
+  categoryButton: {
     flexDirection: 'row',
-    gap: 12,
-  },
-  categorySquare: {
-    flex: 1,
-    aspectRatio: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
     borderRadius: 16,
     borderWidth: 1,
-    gap: 8,
+    gap: 6,
   },
-  categorySquarePlaceholder: {
-    flex: 1,
-  },
-  categorySquareTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  categorySquareCount: {
-    fontSize: 12,
+  categoryButtonText: {
+    fontSize: 14,
     fontWeight: '500',
-    textAlign: 'center',
   },
   categoryDescription: {
     marginHorizontal: 16,
