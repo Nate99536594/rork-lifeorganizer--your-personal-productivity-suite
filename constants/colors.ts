@@ -1,7 +1,5 @@
 import { FONTS } from './fonts';
 
-import { FONTS } from './fonts';
-
 // Light theme colors
 export const lightColors = {
   primary: '#007AFF',

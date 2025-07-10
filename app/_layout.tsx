@@ -3,7 +3,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import * as Font from "expo-font";
 import { useEffect, useState } from "react";
-import { Platform, Text, TextInput } from "react-native";
+import { Platform } from "react-native";
 import { useAuthStore } from "@/store/authStore";
 import { AppTitle } from "@/components/AppTitle";
 
@@ -18,37 +18,9 @@ export default function RootLayout() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
 
   useEffect(() => {
-    async function loadFonts() {
-      try {
-        // Set default font family for Text and TextInput components
-        if (Platform.OS === 'ios') {
-          // SF Pro is the system font on iOS
-          Text.defaultProps = Text.defaultProps || {};
-          Text.defaultProps.style = { fontFamily: 'SF Pro Display' };
-          TextInput.defaultProps = TextInput.defaultProps || {};
-          TextInput.defaultProps.style = { fontFamily: 'SF Pro Display' };
-        } else if (Platform.OS === 'android') {
-          // Use Roboto on Android (system font)
-          Text.defaultProps = Text.defaultProps || {};
-          Text.defaultProps.style = { fontFamily: 'Roboto' };
-          TextInput.defaultProps = TextInput.defaultProps || {};
-          TextInput.defaultProps.style = { fontFamily: 'Roboto' };
-        } else {
-          // Web - use system fonts with SF Pro fallback
-          Text.defaultProps = Text.defaultProps || {};
-          Text.defaultProps.style = { fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif' };
-          TextInput.defaultProps = TextInput.defaultProps || {};
-          TextInput.defaultProps.style = { fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif' };
-        }
-        
-        setFontsLoaded(true);
-      } catch (error) {
-        console.warn('Error loading fonts:', error);
-        setFontsLoaded(true);
-      }
-    }
-
-    loadFonts();
+    // Fonts are handled via the font constants and typography utils
+    // No need to set defaultProps as they don't exist in newer React Native versions
+    setFontsLoaded(true);
   }, []);
 
   useEffect(() => {
