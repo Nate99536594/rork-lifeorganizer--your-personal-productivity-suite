@@ -1316,7 +1316,7 @@ export default function HealthScreen() {
             </View>
             
             <View style={styles.paymentSummary}>
-              <Text style={[styles.summaryTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
+              <Text style={[styles.paymentSummaryTitle, { color: colors.text.primary, fontFamily: colors.fonts?.semiBold }]}>
                 Payment Summary
               </Text>
               <View style={styles.summaryRow}>
@@ -2418,7 +2418,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
   },
-  summaryTitle: {
+  paymentSummaryTitle: {
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 12,
