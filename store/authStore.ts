@@ -1,9 +1,13 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { PrivacySettings, User } from '@/types';
+import { User } from '@/types';
 import { validateUsername, logRejectedUsername } from '@/utils/usernameFilter';
 import { useAchievementStore } from './achievementStore';
+
+interface PrivacySettings {
+  accountVisibility: 'private' | 'friends' | 'public';
+}
 
 interface AuthState {
   user: User | null;
@@ -11,6 +15,7 @@ interface AuthState {
   isLoading: boolean;
   existingUsernames: string[];
   existingAnonymousUsernames: string[];
+  premiumUsers: { [email: string]: boolean }; // Store premium status by email
   login: (email: string, password: string) => Promise<void>;
   signUp: (firstName: string, lastName: string, email: string, password: string) => Promise<void>;
   signInWithApple: () => Promise<void>;
@@ -33,6 +38,7 @@ export const useAuthStore = create<AuthState>()(
       isLoading: false,
       existingUsernames: ['johndoe', 'janesmith', 'testuser'],
       existingAnonymousUsernames: ['user123', 'player456', 'guest789'],
+      premiumUsers: {}, // Store premium status by email
       
       validateAndCheckUsername: async (username: string) => {
         // First, validate against language filter
@@ -157,10 +163,13 @@ export const useAuthStore = create<AuthState>()(
         try {
           await new Promise(resolve => setTimeout(resolve, 1000));
           
+          // Check premium status from our persistent store
+          const { premiumUsers } = get();
+          const isPremium = premiumUsers[email] || false;
+          
           // Simulate fetching user data from backend
           // In a real app, this would be an API call that returns user data including premium status
           const existingUserData = await AsyncStorage.getItem('auth-storage');
-          let isPremium = false;
           let existingUser = null;
           
           if (existingUserData) {
@@ -168,7 +177,8 @@ export const useAuthStore = create<AuthState>()(
               const parsedData = JSON.parse(existingUserData);
               if (parsedData.state && parsedData.state.user && parsedData.state.user.email === email) {
                 existingUser = parsedData.state.user;
-                isPremium = existingUser.isPremium || false;
+                // Always use the premium status from our persistent store
+                existingUser.isPremium = isPremium;
               }
             } catch (e) {
               console.log('Could not parse existing user data');
@@ -202,7 +212,6 @@ export const useAuthStore = create<AuthState>()(
                 anonymousUsername,
                 usernameType: 'real',
                 email,
-                name: 'John Doe', // Added for compatibility
                 isPremium: isPremium,
                 createdAt: new Date().toISOString(),
                 privacySettings: {
@@ -214,11 +223,13 @@ export const useAuthStore = create<AuthState>()(
             });
             
             // Trigger account creation achievement for new users
-            setTimeout(() => {
-              const achievementStore = useAchievementStore.getState();
-              achievementStore.onAccountCreated();
-              achievementStore.checkAndUnlockAchievements();
-            }, 1000);
+            if (!isPremium) { // Only trigger for truly new users
+              setTimeout(() => {
+                const achievementStore = useAchievementStore.getState();
+                achievementStore.onAccountCreated();
+                achievementStore.checkAndUnlockAchievements();
+              }, 1000);
+            }
           }
         } catch (error) {
           console.error('Login error:', error);
@@ -232,20 +243,9 @@ export const useAuthStore = create<AuthState>()(
         try {
           await new Promise(resolve => setTimeout(resolve, 1000));
           
-          // Check if user already exists (shouldn't happen in signup, but just in case)
-          const existingUserData = await AsyncStorage.getItem('auth-storage');
-          let isPremium = false;
-          
-          if (existingUserData) {
-            try {
-              const parsedData = JSON.parse(existingUserData);
-              if (parsedData.state && parsedData.state.user && parsedData.state.user.email === email) {
-                isPremium = parsedData.state.user.isPremium || false;
-              }
-            } catch (e) {
-              console.log('Could not parse existing user data');
-            }
-          }
+          // Check premium status from our persistent store
+          const { premiumUsers } = get();
+          const isPremium = premiumUsers[email] || false;
           
           const { generateUniqueUsername, generateUniqueAnonymousUsername } = get();
           const usernameResult = await generateUniqueUsername(firstName, lastName);
@@ -266,8 +266,7 @@ export const useAuthStore = create<AuthState>()(
               anonymousUsername,
               usernameType: 'real',
               email,
-              name: `${firstName.trim()} ${lastName.trim()}`, // Added for compatibility
-              isPremium: isPremium, // Preserve premium status if it exists
+              isPremium: isPremium, // Use premium status from persistent store
               createdAt: new Date().toISOString(),
               privacySettings: {
                 accountVisibility: 'friends'
@@ -299,9 +298,12 @@ export const useAuthStore = create<AuthState>()(
           
           const email = "user@example.com";
           
+          // Check premium status from our persistent store
+          const { premiumUsers } = get();
+          const isPremium = premiumUsers[email] || false;
+          
           // Check if user already exists
           const existingUserData = await AsyncStorage.getItem('auth-storage');
-          let isPremium = false;
           let existingUser = null;
           
           if (existingUserData) {
@@ -309,7 +311,8 @@ export const useAuthStore = create<AuthState>()(
               const parsedData = JSON.parse(existingUserData);
               if (parsedData.state && parsedData.state.user && parsedData.state.user.email === email) {
                 existingUser = parsedData.state.user;
-                isPremium = existingUser.isPremium || false;
+                // Always use the premium status from our persistent store
+                existingUser.isPremium = isPremium;
               }
             } catch (e) {
               console.log('Could not parse existing user data');
@@ -343,7 +346,6 @@ export const useAuthStore = create<AuthState>()(
                 anonymousUsername,
                 usernameType: 'real',
                 email,
-                name: 'Apple User', // Added for compatibility
                 isPremium: isPremium,
                 createdAt: new Date().toISOString(),
                 privacySettings: {
@@ -376,7 +378,6 @@ export const useAuthStore = create<AuthState>()(
               anonymousUsername,
               usernameType: 'real',
               email,
-              name: 'Apple User', // Added for compatibility
               isPremium: isPremium,
               createdAt: new Date().toISOString(),
               privacySettings: {
@@ -410,11 +411,10 @@ export const useAuthStore = create<AuthState>()(
         
         let updatedUser = { ...user, ...updates };
         
-        // Update name field when first or last name changes
+        // Update username when first or last name changes
         if (updates.firstName || updates.lastName) {
           const newFirstName = updates.firstName || user.firstName || '';
           const newLastName = updates.lastName || user.lastName || '';
-          updatedUser.name = `${newFirstName} ${newLastName}`.trim();
           
           const usernameResult = await generateUniqueUsername(newFirstName, newLastName);
           
@@ -470,12 +470,17 @@ export const useAuthStore = create<AuthState>()(
       },
 
       upgradeToPremium: async () => {
-        const { user } = get();
-        if (user) {
+        const { user, premiumUsers } = get();
+        if (user && user.email) {
+          // Store premium status in persistent store
           set({
             user: {
               ...user,
               isPremium: true
+            },
+            premiumUsers: {
+              ...premiumUsers,
+              [user.email]: true
             }
           });
         }
@@ -498,7 +503,8 @@ export const useAuthStore = create<AuthState>()(
             user: null, 
             isAuthenticated: false,
             existingUsernames: ['johndoe', 'janesmith', 'testuser'],
-            existingAnonymousUsernames: ['user123', 'player456', 'guest789']
+            existingAnonymousUsernames: ['user123', 'player456', 'guest789'],
+            premiumUsers: {} // Clear premium users on account deletion
           });
           
           // Clear all other stores by calling their reset methods

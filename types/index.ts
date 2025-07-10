@@ -10,7 +10,6 @@ export interface User {
   usernameType: 'real' | 'anonymous';
   firstName?: string;
   lastName?: string;
-  name?: string;
   email?: string;
   isPremium: boolean;
   createdAt: string;

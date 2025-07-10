@@ -425,7 +425,7 @@ export default function ProfileScreen() {
             
             <View style={[styles.statCard, { backgroundColor: colors.background.secondary }]}>
               <Text style={[styles.statCount, { color: colors.text.primary }]}>
-                {sessions.reduce((total, session) => total + (session.duration || 0), 0)}m
+                {sessions.reduce((total, session) => total + (session.duration ?? 0), 0)}m
               </Text>
               <Text style={[styles.statLabel, { color: colors.text.secondary }]}>Workout Time</Text>
             </View>
