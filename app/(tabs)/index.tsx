@@ -12,6 +12,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Target, ArrowRight, Filter, Crown, X, Check, BarChart, Calendar, Plus, Folder, ChevronDown, ChevronUp } from 'lucide-react-native';
 import { useColors } from '@/hooks/useColors';
+import { FONTS, getFontWeight } from '@/constants/fonts';
 import { GoalItem } from '@/components/GoalItem';
 import { TaskItem } from '@/components/TaskItem';
 import { ProjectItem } from '@/components/ProjectItem';

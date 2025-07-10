@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useColors } from '@/hooks/useColors';
 import { Logo } from './Logo';
+import { FONTS, getFontWeight } from '@/constants/fonts';
 
 interface AppTitleProps {
   logoSize?: number;
@@ -30,7 +31,8 @@ export const AppTitle: React.FC<AppTitleProps> = ({
         { 
           fontSize, 
           color: titleColor,
-          fontFamily: colors.fonts.bold
+          fontFamily: FONTS.bold,
+          fontWeight: getFontWeight('bold')
         },
         horizontal && styles.horizontalText
       ]}>
@@ -52,7 +54,7 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
   },
   title: {
-    fontWeight: '700',
+    // fontWeight handled by getFontWeight function
   },
   horizontalText: {
     marginLeft: 8,

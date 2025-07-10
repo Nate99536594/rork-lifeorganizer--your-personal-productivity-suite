@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Eye, EyeOff } from 'lucide-react-native';
 import { useColors } from '@/hooks/useColors';
+import { FONTS, getFontWeight } from '@/constants/fonts';
 
 interface InputProps extends TextInputProps {
   label?: string;
@@ -36,7 +37,8 @@ export const Input: React.FC<InputProps> = ({
           styles.label, 
           { 
             color: colors.text.secondary,
-            fontFamily: 'Inter'
+            fontFamily: FONTS.medium,
+            fontWeight: getFontWeight('medium')
           }
         ]}>
           {label}
@@ -55,7 +57,7 @@ export const Input: React.FC<InputProps> = ({
             styles.input, 
             { 
               color: colors.text.primary,
-              fontFamily: 'Inter'
+              fontFamily: FONTS.regular
             }
           ]}
           onFocus={() => setIsFocused(true)}
@@ -82,7 +84,7 @@ export const Input: React.FC<InputProps> = ({
           styles.errorText, 
           { 
             color: colors.danger,
-            fontFamily: 'Inter'
+            fontFamily: FONTS.regular
           }
         ]}>
           {error}
@@ -99,8 +101,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     marginBottom: 6,
-    fontWeight: '500',
-    fontFamily: 'Inter',
   },
   inputContainer: {
     flexDirection: 'row',
@@ -113,12 +113,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
-    fontFamily: 'Inter',
   },
   errorText: {
     fontSize: 12,
     marginTop: 4,
-    fontFamily: 'Inter',
   },
   eyeIcon: {
     padding: 10,

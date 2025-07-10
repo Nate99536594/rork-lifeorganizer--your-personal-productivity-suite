@@ -1,8 +1,9 @@
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
-import { Platform } from "react-native";
+import * as Font from "expo-font";
+import { useEffect, useState } from "react";
+import { Platform, Text, TextInput } from "react-native";
 import { useAuthStore } from "@/store/authStore";
 import { AppTitle } from "@/components/AppTitle";
 
@@ -14,14 +15,56 @@ export const unstable_settings = {
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  const [fontsLoaded, setFontsLoaded] = useState(false);
+
   useEffect(() => {
-    // Hide splash screen after a short delay
-    const timer = setTimeout(() => {
-      SplashScreen.hideAsync();
-    }, 100);
-    
-    return () => clearTimeout(timer);
+    async function loadFonts() {
+      try {
+        // Set default font family for Text and TextInput components
+        if (Platform.OS === 'ios') {
+          // SF Pro is the system font on iOS
+          Text.defaultProps = Text.defaultProps || {};
+          Text.defaultProps.style = { fontFamily: 'SF Pro Display' };
+          TextInput.defaultProps = TextInput.defaultProps || {};
+          TextInput.defaultProps.style = { fontFamily: 'SF Pro Display' };
+        } else if (Platform.OS === 'android') {
+          // Use Roboto on Android (system font)
+          Text.defaultProps = Text.defaultProps || {};
+          Text.defaultProps.style = { fontFamily: 'Roboto' };
+          TextInput.defaultProps = TextInput.defaultProps || {};
+          TextInput.defaultProps.style = { fontFamily: 'Roboto' };
+        } else {
+          // Web - use system fonts with SF Pro fallback
+          Text.defaultProps = Text.defaultProps || {};
+          Text.defaultProps.style = { fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif' };
+          TextInput.defaultProps = TextInput.defaultProps || {};
+          TextInput.defaultProps.style = { fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif' };
+        }
+        
+        setFontsLoaded(true);
+      } catch (error) {
+        console.warn('Error loading fonts:', error);
+        setFontsLoaded(true);
+      }
+    }
+
+    loadFonts();
   }, []);
+
+  useEffect(() => {
+    if (fontsLoaded) {
+      // Hide splash screen after fonts are loaded
+      const timer = setTimeout(() => {
+        SplashScreen.hideAsync();
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) {
+    return null;
+  }
 
   // Disable web development tools and element selection - web only
   useEffect(() => {

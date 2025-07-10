@@ -1,3 +1,7 @@
+import { FONTS } from './fonts';
+
+import { FONTS } from './fonts';
+
 // Light theme colors
 export const lightColors = {
   primary: '#007AFF',
@@ -27,10 +31,10 @@ export const lightColors = {
   },
   border: '#C6C6C8',
   fonts: {
-    regular: 'System',
-    medium: 'System',
-    semiBold: 'System',
-    bold: 'System',
+    regular: FONTS.regular,
+    medium: FONTS.medium,
+    semiBold: FONTS.medium,
+    bold: FONTS.bold,
   },
 };
 
@@ -63,19 +67,19 @@ export const darkColors = {
   },
   border: '#38383A',
   fonts: {
-    regular: 'System',
-    medium: 'System',
-    semiBold: 'System',
-    bold: 'System',
+    regular: FONTS.regular,
+    medium: FONTS.medium,
+    semiBold: FONTS.medium,
+    bold: FONTS.bold,
   },
 };
 
 // Font configuration using system fonts
 export const fonts = {
-  regular: 'System',
-  medium: 'System',
-  semiBold: 'System',
-  bold: 'System',
+  regular: FONTS.regular,
+  medium: FONTS.medium,
+  semiBold: FONTS.medium,
+  bold: FONTS.bold,
 };
 
 // Character customization colors

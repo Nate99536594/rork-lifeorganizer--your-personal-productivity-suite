@@ -9,6 +9,7 @@ import {
   View
 } from 'react-native';
 import { useColors } from '@/hooks/useColors';
+import { FONTS, getFontWeight } from '@/constants/fonts';
 
 interface ButtonProps {
   title: string;
@@ -115,7 +116,10 @@ export const Button: React.FC<ButtonProps> = ({
           <Text 
             style={[
               styles.text, 
-              { fontFamily: 'Inter' },
+              { 
+                fontFamily: FONTS.medium,
+                fontWeight: getFontWeight('semibold')
+              },
               getTextStyle(), 
               getTextSizeStyle(),
               disabled && { opacity: 0.8 },
@@ -143,8 +147,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   text: {
-    fontWeight: '600',
     textAlign: 'center',
-    fontFamily: 'Inter',
   },
 });
