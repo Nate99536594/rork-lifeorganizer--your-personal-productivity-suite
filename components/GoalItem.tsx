@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
   container: {
     borderRadius: 12,
     paddingVertical: 16,
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
