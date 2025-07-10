@@ -187,7 +187,7 @@ export default function AchievementsScreen() {
       {selectedCategory !== 'all' && (
         <View style={[styles.categoryDescription, { backgroundColor: colors.background.primary }]}>
           <Text style={[styles.categoryDescriptionText, { color: colors.text.secondary }]}>
-            {CATEGORY_INFO[selectedCategory].description}
+            {CATEGORY_INFO[selectedCategory as keyof typeof CATEGORY_INFO].description}
           </Text>
         </View>
       )}

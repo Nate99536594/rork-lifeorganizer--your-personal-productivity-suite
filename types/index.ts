@@ -568,6 +568,8 @@ export interface Nudge {
 }
 
 // Achievement types
+export type AchievementCategory = 'streak' | 'milestone' | 'social' | 'longevity';
+
 export interface Achievement {
   id: string;
   title: string;
