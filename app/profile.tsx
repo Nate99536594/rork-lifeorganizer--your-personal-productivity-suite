@@ -51,7 +51,7 @@ export default function ProfileScreen() {
   const favoriteFriendsCount = allFriends.filter(friend => friend.isFavorite).length;
   
   const completedTasks = tasks.filter(task => task.completed).length;
-  const completedGoals = goals.filter(goal => goal.completed).length;
+  const completedGoals = goals.filter(goal => goal.status === 'completed').length;
   
   // Calculate weekly workout days completed
   const weekProgress = getWeekProgress(sessions);
@@ -425,7 +425,7 @@ export default function ProfileScreen() {
             
             <View style={[styles.statCard, { backgroundColor: colors.background.secondary }]}>
               <Text style={[styles.statCount, { color: colors.text.primary }]}>
-                {sessions.reduce((total, session) => total + session.duration, 0)}m
+                {sessions.reduce((total, session) => total + (session.duration || 0), 0)}m
               </Text>
               <Text style={[styles.statLabel, { color: colors.text.secondary }]}>Workout Time</Text>
             </View>
