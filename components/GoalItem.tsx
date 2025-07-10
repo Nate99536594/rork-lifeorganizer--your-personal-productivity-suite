@@ -113,7 +113,8 @@ export const GoalItem: React.FC<GoalItemProps> = ({
 const styles = StyleSheet.create({
   container: {
     borderRadius: 12,
-    padding: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
     marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
