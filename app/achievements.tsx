@@ -54,10 +54,20 @@ export default function AchievementsScreen() {
   const lockedAchievements = getLockedAchievements();
   
   const getAchievementsToShow = () => {
+    let achievements;
     if (selectedCategory === 'all') {
-      return [...unlockedAchievements, ...lockedAchievements];
+      achievements = [...unlockedAchievements, ...lockedAchievements];
+    } else {
+      achievements = getAchievementsByCategory(selectedCategory);
     }
-    return getAchievementsByCategory(selectedCategory);
+    
+    // Sort by rarity: common -> rare -> epic -> legendary
+    const rarityOrder = { common: 1, rare: 2, epic: 3, legendary: 4 };
+    return achievements.sort((a, b) => {
+      const aOrder = rarityOrder[a.rarity] || 0;
+      const bOrder = rarityOrder[b.rarity] || 0;
+      return aOrder - bOrder;
+    });
   };
   
   const achievementsToShow = getAchievementsToShow();
@@ -97,7 +107,7 @@ export default function AchievementsScreen() {
         <View style={styles.statItem}>
           <Trophy size={24} color={colors.warning} />
           <Text style={[styles.statNumber, { color: colors.text.primary }]}>
-            {unlockedAchievements.length}
+            {unlockedAchievements.length}/{unlockedAchievements.length + lockedAchievements.length}
           </Text>
           <Text style={[styles.statLabel, { color: colors.text.secondary }]}>
             Unlocked
@@ -113,18 +123,6 @@ export default function AchievementsScreen() {
           </Text>
           <Text style={[styles.statLabel, { color: colors.text.secondary }]}>
             Complete
-          </Text>
-        </View>
-        
-        <View style={styles.statDivider} />
-        
-        <View style={styles.statItem}>
-          <Calendar size={24} color={colors.secondary} />
-          <Text style={[styles.statNumber, { color: colors.text.primary }]}>
-            {unlockedAchievements.length + lockedAchievements.length}
-          </Text>
-          <Text style={[styles.statLabel, { color: colors.text.secondary }]}>
-            Total
           </Text>
         </View>
       </View>
@@ -277,7 +275,7 @@ const styles = StyleSheet.create({
     width: 1,
     height: 40,
     backgroundColor: '#E5E7EB',
-    marginHorizontal: 16,
+    marginHorizontal: 20,
   },
   categoryFilter: {
     paddingHorizontal: 16,
@@ -288,7 +286,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 6,
     borderRadius: 20,
     borderWidth: 1,
     gap: 8,
