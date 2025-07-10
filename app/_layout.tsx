@@ -16,6 +16,7 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   useEffect(() => {
     // Fonts are handled via the font constants and typography utils
@@ -76,11 +77,10 @@ export default function RootLayout() {
     return null;
   }
 
-  return <RootLayoutNav />;
+  return <RootLayoutNav isAuthenticated={isAuthenticated} />;
 }
 
-function RootLayoutNav() {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+function RootLayoutNav({ isAuthenticated }: { isAuthenticated: boolean }) {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
