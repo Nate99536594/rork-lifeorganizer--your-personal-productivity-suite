@@ -1,4 +1,8 @@
 // User types
+export interface PrivacySettings {
+  accountVisibility: 'private' | 'friends' | 'public';
+}
+
 export interface User {
   id: string;
   username: string;
@@ -6,13 +10,12 @@ export interface User {
   usernameType: 'real' | 'anonymous';
   firstName?: string;
   lastName?: string;
+  name?: string;
   email?: string;
   isPremium: boolean;
   createdAt: string;
   character?: Character;
-  privacySettings?: {
-    accountVisibility: 'private' | 'friends' | 'public';
-  };
+  privacySettings?: PrivacySettings;
 }
 
 // Character types

@@ -412,9 +412,9 @@ export const useAuthStore = create<AuthState>()(
         
         // Update name field when first or last name changes
         if (updates.firstName || updates.lastName) {
-          const newFirstName = updates.firstName || user.firstName;
-          const newLastName = updates.lastName || user.lastName;
-          updatedUser.name = `${newFirstName} ${newLastName}`;
+          const newFirstName = updates.firstName || user.firstName || '';
+          const newLastName = updates.lastName || user.lastName || '';
+          updatedUser.name = `${newFirstName} ${newLastName}`.trim();
           
           const usernameResult = await generateUniqueUsername(newFirstName, newLastName);
           
