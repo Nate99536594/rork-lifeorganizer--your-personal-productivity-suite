@@ -230,16 +230,13 @@ export default function HomeScreen() {
     setIsProcessingPayment(true);
     
     try {
-      // Simulate payment processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Simulate successful payment
+      // Directly upgrade to premium without payment processing
       await upgradeToPremium();
       
       // Close modal
       setShowPremiumModal(false);
     } catch (error) {
-      Alert.alert('Payment Failed', 'There was an issue processing your payment. Please try again.');
+      Alert.alert('Upgrade Failed', 'There was an issue upgrading your account. Please try again.');
     } finally {
       setIsProcessingPayment(false);
     }
@@ -933,7 +930,7 @@ export default function HomeScreen() {
               >
                 <Crown size={20} color="white" />
                 <Text style={[styles.upgradeToPremiumButtonText, { fontFamily: colors.fonts?.semiBold }]}>
-                  {isProcessingPayment ? 'Processing...' : 'Upgrade to Premium'}
+                  {isProcessingPayment ? 'Upgrading...' : 'Upgrade to Premium'}
                 </Text>
               </TouchableOpacity>
               
