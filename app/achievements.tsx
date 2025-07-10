@@ -285,11 +285,11 @@ const styles = StyleSheet.create({
   categoryButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 16,
     borderWidth: 1,
-    gap: 8,
+    gap: 6,
   },
   categoryButtonText: {
     fontSize: 14,
