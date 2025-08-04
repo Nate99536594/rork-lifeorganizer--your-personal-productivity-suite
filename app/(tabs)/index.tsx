@@ -23,6 +23,7 @@ import { useStreakStore } from '@/store/streakStore';
 import { useAuthStore } from '@/store/authStore';
 import { StreakCounter } from '@/components/StreakCounter';
 import { WeeklyWorkoutTracker } from '@/components/WeeklyWorkoutTracker';
+import { DailyTaskProgress } from '@/components/DailyTaskProgress';
 import { Button } from '@/components/Button';
 import { useWorkoutSessionStore } from '@/store/workoutSessionStore';
 
@@ -288,6 +289,9 @@ export default function HomeScreen() {
             )}
           </View>
         </View>
+        
+        {/* Daily Task Progress */}
+        <DailyTaskProgress testId="daily-task-progress" />
         
         {/* Daily Streak Section */}
         <View style={[styles.streakSection, { backgroundColor: colors.background.primary }]}>
