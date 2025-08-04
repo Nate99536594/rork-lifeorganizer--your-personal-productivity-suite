@@ -15,14 +15,22 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "app.rork.lifeorganizer-your-personal-productivity-suite"
+      "bundleIdentifier": "app.rork.lifeorganizer-your-personal-productivity-suite",
+      "infoPlist": {
+        "NSContactsUsageDescription": "A message that tells the user why the app is requesting access to the user's contacts."
+      },
+      "accessesContactNotes": true
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "app.rork.lifeorganizer-your-personal-productivity-suite"
+      "package": "app.rork.lifeorganizer-your-personal-productivity-suite",
+      "permissions": [
+        "READ_CONTACTS",
+        "WRITE_CONTACTS"
+      ]
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
@@ -32,6 +40,12 @@
         "expo-router",
         {
           "origin": "https://rork.com/"
+        }
+      ],
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "Allow $(PRODUCT_NAME) to access your contacts."
         }
       ]
     ],

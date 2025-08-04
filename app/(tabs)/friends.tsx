@@ -39,7 +39,8 @@ import {
   Share2,
   List,
   Eye,
-  Folder
+  Folder,
+  Check
 } from 'lucide-react-native';
 import * as Clipboard from 'expo-clipboard';
 import { useColors } from '@/hooks/useColors';
@@ -58,7 +59,7 @@ import { Input } from '@/components/Input';
 export default function FriendsTab() {
   const router = useRouter();
   const colors = useColors();
-  const { user } = useAuthStore();
+  const { user, upgradeToPremium } = useAuthStore();
   const { 
     getFriends, 
     getPendingRequestsCount, 
@@ -95,6 +96,8 @@ export default function FriendsTab() {
   
   // Challenge creation modal state
   const [showCreateChallengeModal, setShowCreateChallengeModal] = useState(false);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [challengeName, setChallengeName] = useState('');
   const [durationOption, setDurationOption] = useState<'preset' | 'custom'>('preset');
   const [presetDuration, setPresetDuration] = useState<3 | 7>(7);
@@ -333,6 +336,33 @@ export default function FriendsTab() {
     } catch (error) {
       Alert.alert('Error', 'Failed to send invite');
     }
+  };
+  
+  const premiumFeatures = [
+    'Projects - Create and manage up to 5 projects to organize your tasks',
+    'AI workout assistant - Get personalized workout plans tailored to your fitness goals',
+    'Up to 30 tasks - Expand beyond the standard 8 task limit',
+    'Up to 12 goals - Expand beyond the standard 3 goal limit',
+    'Up to 20 tasks per project - Organize your work efficiently',
+    'Monthly recap - Detailed insights on completed and unfinished tasks/workouts'
+  ];
+
+  const handleUpgradeToPremium = async () => {
+    setIsProcessingPayment(true);
+    
+    try {
+      await upgradeToPremium();
+      setShowPremiumModal(false);
+      Alert.alert('Success', 'Welcome to Premium! You now have access to all premium features.');
+    } catch (error) {
+      Alert.alert('Upgrade Failed', 'There was an issue upgrading your account. Please try again.');
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
+  const handleClosePremiumModal = () => {
+    setShowPremiumModal(false);
   };
   
   const isCurrentUser = (userId: string) => {
@@ -1066,7 +1096,13 @@ export default function FriendsTab() {
                   borderBottomWidth: 2
                 }
               ]}
-              onPress={() => setActiveTab('projects')}
+              onPress={() => {
+                if (!user?.isPremium) {
+                  setShowPremiumModal(true);
+                } else {
+                  setActiveTab('projects');
+                }
+              }}
             >
               <View style={styles.tabContent}>
                 <Folder 
@@ -1214,6 +1250,82 @@ export default function FriendsTab() {
       </ScrollView>
       
       {renderCreateChallengeModal()}
+      
+      {/* Premium Features Modal */}
+      <Modal
+        visible={showPremiumModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={handleClosePremiumModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.premiumModalContent, { backgroundColor: colors.background.primary }]}>
+            <View style={styles.premiumHeader}>
+              <View style={styles.premiumTitleContainer}>
+                <Crown size={24} color={colors.primary} />
+                <Text style={[styles.premiumTitle, { color: colors.text.primary }]}>
+                  Premium Plan
+                </Text>
+              </View>
+              <TouchableOpacity 
+                style={styles.closeButton}
+                onPress={handleClosePremiumModal}
+              >
+                <X size={24} color={colors.text.secondary} />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.premiumPricing}>
+              <Text style={[styles.premiumPrice, { color: colors.primary }]}>
+                $3.99
+              </Text>
+              <Text style={[styles.premiumPeriod, { color: colors.text.secondary }]}>
+                per month
+              </Text>
+            </View>
+            
+            <ScrollView style={styles.premiumFeaturesContainer} showsVerticalScrollIndicator={false}>
+              <View style={styles.premiumFeatures}>
+                <Text style={[styles.featuresTitle, { color: colors.text.primary }]}>
+                  Premium Features
+                </Text>
+                
+                {premiumFeatures.map((feature, index) => (
+                  <View key={index} style={styles.featureItem}>
+                    <Check size={20} color={colors.success} />
+                    <Text style={[styles.featureText, { color: colors.text.secondary }]}>
+                      {feature}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </ScrollView>
+            
+            <View style={styles.premiumActions}>
+              <TouchableOpacity 
+                style={[styles.upgradeToPremiumButton, { backgroundColor: colors.primary }]}
+                onPress={handleUpgradeToPremium}
+                disabled={isProcessingPayment}
+              >
+                <Crown size={20} color="white" />
+                <Text style={styles.upgradeToPremiumButtonText}>
+                  {isProcessingPayment ? 'Upgrading...' : 'Upgrade to Premium'}
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.cancelPremiumButton}
+                onPress={handleClosePremiumModal}
+                disabled={isProcessingPayment}
+              >
+                <Text style={[styles.cancelPremiumButtonText, { color: colors.text.secondary }]}>
+                  Maybe Later
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -1592,5 +1704,96 @@ const styles = StyleSheet.create({
   },
   modalButton: {
     marginTop: 16,
+  },
+  premiumModalContent: {
+    width: '100%',
+    maxHeight: '85%',
+    borderRadius: 20,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  premiumHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  premiumTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  premiumTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginLeft: 8,
+  },
+  closeButton: {
+    padding: 4,
+  },
+  premiumPricing: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  premiumPrice: {
+    fontSize: 48,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  premiumPeriod: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  premiumFeaturesContainer: {
+    flex: 1,
+    marginBottom: 24,
+  },
+  premiumFeatures: {
+    paddingBottom: 16,
+  },
+  featuresTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  featureText: {
+    fontSize: 15,
+    lineHeight: 22,
+    marginLeft: 12,
+    flex: 1,
+  },
+  premiumActions: {
+    gap: 12,
+  },
+  upgradeToPremiumButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  upgradeToPremiumButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  cancelPremiumButton: {
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  cancelPremiumButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
   },
 });
