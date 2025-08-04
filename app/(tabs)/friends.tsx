@@ -1761,12 +1761,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     marginBottom: 12,
+    paddingHorizontal: 4,
   },
   featureText: {
     fontSize: 15,
     lineHeight: 22,
     marginLeft: 12,
     flex: 1,
+    flexShrink: 1,
   },
   premiumActions: {
     gap: 12,
