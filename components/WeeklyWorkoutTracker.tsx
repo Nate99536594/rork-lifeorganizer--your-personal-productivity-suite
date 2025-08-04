@@ -38,7 +38,10 @@ export const WeeklyWorkoutTracker: React.FC<WeeklyWorkoutTrackerProps> = ({ onEd
     resetWeekIfNeeded();
     updateWeekProgress(sessions);
     checkAndUpdateWeeklyStreak(sessions);
-    
+  }, [sessions, resetWeekIfNeeded, updateWeekProgress, checkAndUpdateWeeklyStreak]);
+  
+  // Separate effect for date checking to avoid calling store methods during render
+  useEffect(() => {
     // Set up an interval to check the date every minute
     const intervalId = setInterval(() => {
       const now = new Date();
@@ -53,10 +56,6 @@ export const WeeklyWorkoutTracker: React.FC<WeeklyWorkoutTrackerProps> = ({ onEd
           prevDate.getMonth() !== currentMonth ||
           prevDate.getFullYear() !== currentYear
         ) {
-          // Day has changed, trigger a reset check
-          resetWeekIfNeeded();
-          updateWeekProgress(sessions);
-          checkAndUpdateWeeklyStreak(sessions);
           return now;
         }
         return prevDate;
@@ -64,7 +63,15 @@ export const WeeklyWorkoutTracker: React.FC<WeeklyWorkoutTrackerProps> = ({ onEd
     }, 60000); // Check every minute
     
     return () => clearInterval(intervalId);
-  }, [sessions]);
+  }, []);
+  
+  // Effect to handle date changes
+  useEffect(() => {
+    // When date changes, trigger store updates
+    resetWeekIfNeeded();
+    updateWeekProgress(sessions);
+    checkAndUpdateWeeklyStreak(sessions);
+  }, [currentDate, sessions, resetWeekIfNeeded, updateWeekProgress, checkAndUpdateWeeklyStreak]);
   
   const weekProgress = getWeekProgress(sessions);
   const currentWeekPlan = getCurrentWeekPlan();
