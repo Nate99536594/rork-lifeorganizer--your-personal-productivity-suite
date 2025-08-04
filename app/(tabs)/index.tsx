@@ -911,7 +911,10 @@ export default function HomeScreen() {
                 $3.99
               </Text>
               <Text style={[styles.premiumPeriod, { color: colors.text.secondary, fontFamily: colors.fonts?.medium }]}>
-                per month
+                per month (recurring)
+              </Text>
+              <Text style={[styles.premiumRecurringNote, { color: colors.text.tertiary, fontFamily: colors.fonts?.regular }]}>
+                Automatically renews monthly
               </Text>
             </View>
             
@@ -1395,6 +1398,12 @@ const styles = StyleSheet.create({
   premiumPeriod: {
     fontSize: 16,
     fontWeight: '500',
+  },
+  premiumRecurringNote: {
+    fontSize: 12,
+    fontWeight: '400',
+    marginTop: 4,
+    textAlign: 'center',
   },
   premiumFeaturesContainer: {
     flex: 1,
