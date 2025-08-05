@@ -207,16 +207,31 @@ export default function SettingsScreen() {
               
               characterStore.character = {
                 id: 'default',
-                skinTone: 'light',
-                hairColor: 'black',
-                hairStyle: 'short',
-                eyeColor: 'brown',
-                bodyType: 'average',
-                clothingColor: 'blue',
-                accessories: [],
+                name: 'Default Character',
+                level: 1,
+                experience: 0,
+                experienceToNext: 100,
+                appearance: {
+                  skinTone: 'light',
+                  hairColor: 'black',
+                  hairStyle: 'short',
+                  eyeColor: 'brown',
+                  bodyType: 'average',
+                },
+                stats: {
+                  strength: 10,
+                  endurance: 10,
+                  flexibility: 10,
+                  balance: 10,
+                  speed: 10,
+                },
+                equipment: {
+                  outfit: 'casual',
+                  accessories: [],
+                },
               };
               
-              weeklyWorkoutStore.currentWeeklyPlan = null;
+              weeklyWorkoutStore.currentWeeklyWorkoutPlan = null;
               weeklyWorkoutStore.weeklyStreak = 0;
               weeklyWorkoutStore.currentWeekStart = '';
               
