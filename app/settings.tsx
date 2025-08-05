@@ -33,7 +33,8 @@ import {
   AtSign,
   ToggleLeft,
   ToggleRight,
-  Trash2
+  Trash2,
+  Crown
 } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
@@ -53,8 +54,9 @@ import { useCharacterStore } from '@/store/characterStore';
 import { useWeeklyWorkoutStore } from '@/store/weeklyWorkoutStore';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
+import { Logo } from '@/components/Logo';
 
-type ExpandedSection = 'theme' | 'profile' | 'password' | 'privacy' | 'support' | 'delete' | null;
+type ExpandedSection = 'theme' | 'profile' | 'password' | 'privacy' | 'subscription' | 'support' | 'delete' | null;
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -579,6 +581,66 @@ New username: ${newUsername}`,
           </View>
         )}
         
+        {/* Subscription Section */}
+        {renderCollapsibleSection(
+          'subscription',
+          'StreakFlow Premium',
+          <Crown size={20} color={colors.primary} />,
+          <View>
+            <View style={[styles.subscriptionHeader, { backgroundColor: colors.background.secondary, borderColor: colors.border }]}>
+              <View style={styles.subscriptionLogoContainer}>
+                <Logo size={32} color={colors.primary} />
+                <View style={styles.subscriptionTitleContainer}>
+                  <Text style={[styles.subscriptionTitle, { color: colors.text.primary }]}>
+                    StreakFlow Premium
+                  </Text>
+                  <View style={styles.subscriptionStatusContainer}>
+                    {user?.isPremium ? (
+                      <>
+                        <Check size={16} color={colors.success} />
+                        <Text style={[styles.subscriptionStatus, { color: colors.success }]}>
+                          Active
+                        </Text>
+                      </>
+                    ) : (
+                      <>
+                        <Crown size={16} color={colors.text.secondary} />
+                        <Text style={[styles.subscriptionStatus, { color: colors.text.secondary }]}>
+                          Not Active
+                        </Text>
+                      </>
+                    )}
+                  </View>
+                </View>
+              </View>
+            </View>
+            
+            <Text style={[styles.sectionDescription, { color: colors.text.secondary }]}>
+              {user?.isPremium 
+                ? 'You have access to all premium features including AI workout assistance, project collaboration, and advanced analytics.'
+                : 'Upgrade to Premium to unlock AI workout assistance, project collaboration, and advanced analytics.'
+              }
+            </Text>
+            
+            {!user?.isPremium && (
+              <Button
+                title="Upgrade to Premium"
+                onPress={() => router.push('/modal')}
+                icon={<Crown size={18} color="white" />}
+                style={styles.saveButton}
+              />
+            )}
+            
+            {user?.isPremium && (
+              <View style={[styles.premiumInfo, { backgroundColor: colors.success + '10', borderColor: colors.success }]}>
+                <Text style={[styles.premiumInfoText, { color: colors.text.primary }]}>
+                  Thank you for being a Premium member! You have access to all features.
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+        
         {/* Support Section */}
         {renderCollapsibleSection(
           'support',
@@ -816,5 +878,43 @@ const styles = StyleSheet.create({
   visibilityOptionDescription: {
     fontSize: 14,
     lineHeight: 20,
+  },
+  subscriptionHeader: {
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  subscriptionLogoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  subscriptionTitleContainer: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  subscriptionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  subscriptionStatusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  subscriptionStatus: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginLeft: 4,
+  },
+  premiumInfo: {
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginTop: 8,
+  },
+  premiumInfoText: {
+    fontSize: 14,
+    textAlign: 'center',
   },
 });
